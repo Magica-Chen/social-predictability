@@ -3,10 +3,14 @@
 
 # entropy_functions.py
 # (c) Jim Bagrow, Lewis Mitchell
-# Last Modified: 2015-05-24
+# Modified: 2015-05-24
+#
+# Last modified by Zexun Chen, 2020-02-18
+# 
 
 import math
 import collections
+import numpy as np
 
 
 def log2(x):
@@ -43,6 +47,37 @@ def entropy(seq, lambdas=False):
     if lambdas:
         return L
     return (1.0*N/sum(L)) * log2(N)
+
+# Modified by Zexun
+# Since the LZ-entropy estimation only coverge when the length is large, so we add one more arg for LZ-entropy function
+def LZ_entropy(seq, e=100, lambdas=False):
+    """Estimate the entropy rate of the symbols encoded in `seq`, a list of
+    strings.
+    
+    Kontoyiannis, I., Algoet, P. H., Suhov, Y. M., & Wyner, A. J. (1998).
+    Nonparametric entropy estimation for stationary processes and random
+    fields, with applications to English text. IEEE Transactions on Information
+    Theory, 44(3), 1319-1327.
+    """
+    N = len(seq)
+    
+    if N < e:
+        return np.nan
+    else:
+        L = []
+        for i,w in enumerate(seq):
+            seen = True
+            prevSeq = " %s " % " ".join(seq[0:i])
+            c = i
+            while seen and c < N:
+                c += 1
+                seen = (" %s " % " ".join(seq[i:c])) in prevSeq
+            l = c - i
+            L.append(l)
+            
+        if lambdas:
+            return L
+        return (1.0*N/sum(L)) * log2(N)
 
 
 def cross_entropy(W1, W2, PTs, lambdas=False):
