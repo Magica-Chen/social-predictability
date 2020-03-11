@@ -7,7 +7,6 @@
 import pandas as pd
 import numpy as np
 import mpmath
-from math import log, e
 from entropy_functions import shannon_entropy, entropy, cross_entropy, LZ_entropy
 
 
@@ -200,20 +199,20 @@ class MeetupStrategy:
 
         return meetup_ego
 
-    def ego_alter_info(self, start=0, end=None, tempsave=False):
+    def ego_alter_info(self, start=0, end=None, filesave=False):
         """ Produce all the ego-alter information"""
         if end is None:
             end = len(self.userlist)
 
-        meetup_list = [self.ego_meetup(ego, tempsave=tempsave) for ego in self.userlist[start:end]]
+        meetup_list = [self.ego_meetup(ego, tempsave=filesave) for ego in self.userlist[start:end]]
         self.user_stats = pd.concat(meetup_list, sort=False)
         # save the file
-        if tempsave:
+        if filesave:
             self.user_stats.to_csv('user-meetup-full.csv', index=False)
 
         return self.user_stats
 
-    def ego_info(self, start=0, end=None, tempsave=False):
+    def ego_info(self, start=0, end=None, filesave=False):
         if end is None:
             end = len(self.userlist)
 
@@ -228,7 +227,7 @@ class MeetupStrategy:
         df_ego = [self.userlist[start:end], ego_log2, ego_LZ_entropy, Pi_ego]
         df_ego = pd.DataFrame(df_ego, columns=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
 
-        if tempsave:
+        if filesave:
             df_ego.to_csv('user-ego-info.csv', index=False)
 
         return df_ego
