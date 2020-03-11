@@ -44,8 +44,8 @@ class MeetupStrategy:
         self.epsilon = epsilon
         self.user_stats = user_stats
 
-    def extract_info(self, user):
-        """ Public function: extract temporal-spatial information for each user
+    def _extract_info(self, user):
+        """ Protect method: extract temporal-spatial information for each user
         Arg:
             user: a string, a userid
 
@@ -77,7 +77,8 @@ class MeetupStrategy:
         alters_Lmax = np.amax(alters_L, axis=0)
         return (1.0 * length_ego / sum(alters_Lmax)) * np.log2(ave_length)
 
-    def weight(self, ego_L, alter_L=None):
+    @staticmethod
+    def weight(ego_L, alter_L=None):
         """ Public method, compute how important of alter for ego"""
         if alter_L is None:
             return len(ego_L)
@@ -106,7 +107,7 @@ class MeetupStrategy:
         # included rank is j+1
         rank = alterid + 1
 
-        alter_time, length_alter_uniq, length_alter, alter_placeid = self.extract_info(alter)
+        alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
 
         alter_log2 = np.log2(length_alter_uniq)
         """Be careful: W1 in cross_entropy is B in the paper, W2 is cross_entropy is A in the paper """
@@ -168,8 +169,16 @@ class MeetupStrategy:
                 ]
 
     def ego_meetup(self, ego, tempsave=False):
+        """ Public method: obtain all the meetup-cross-entropy info for ego
+        Args:
+            ego: string, a user
+            tempsave: whether it will save csv
+
+        Return:
+            ego-alter pair all information, DataFrame
+        """
         # extraact information of ego and compute all the statistics for all egos
-        ego_time, length_ego_uni, length_ego, ego_placeid = self.extract_info(ego)
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
 
         # compute the cumulative cross entropy for an ego
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
