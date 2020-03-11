@@ -27,7 +27,7 @@ class MeetupStrategy:
     Create a Meetup Strategy class to include all the computation
     """
 
-    def __init__(self, userlist, user_meetup, placeidT, epsilon=2, user_stats=None):
+    def __init__(self, userlist, user_meetup, placeidT, epsilon=2, user_stats=None, ego_stats=None):
         """
         MeetupStrategy needs to have several important inputs,
         userlist: list, all userid
@@ -35,6 +35,7 @@ class MeetupStrategy:
         placeidT: dict, include all the users' temporal placeid, keys are the userids
         epsilon: int, shortest length we considered in our computation
         user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
+        ego_stats: DataFrame, cols = ['userid_x', other statas]
 
         The top three inputs can be replaced as the whole dataset, but it will cost more time any time call the calss
         """
@@ -43,6 +44,7 @@ class MeetupStrategy:
         self.placeidT = placeidT
         self.epsilon = epsilon
         self.user_stats = user_stats
+        self.ego_stats = ego_stats
 
     def _extract_info(self, user):
         """ Protect method: extract temporal-spatial information for each user
@@ -80,6 +82,8 @@ class MeetupStrategy:
     @staticmethod
     def weight(ego_L, alter_L=None):
         """ Public method, compute how important of alter for ego"""
+        # TODO: How to define weight is a problem
+        # Definition 1, which is cloe to the paper's definition
         if alter_L is None:
             return len(ego_L)
         else:
@@ -124,9 +128,8 @@ class MeetupStrategy:
 
         """ For all above alters """
         # Obtain the basic information to extend L, wb, length_alters
-        # obtain the cross-parsed match length
+        # obtain the cross-parsed match length for this ego-alter pair
         L[alterid] = cross_entropy(alter_placeid, ego_placeid, PTs, lambdas=True)
-        # TODO: define weight
         wb[alterid] = self.weight(ego_L, L[alterid])
         # length of alter placeid
         length_alters[alterid] = length_alter
@@ -147,7 +150,6 @@ class MeetupStrategy:
         # for only this alter and ego
         ego_alter_L = [ego_L, L[alterid]]
         bi_length = np.array([length_alters[alterid], length_ego])
-        # TODO: weight
         bi_weight = np.array([wb[alterid], self.weight(ego_L)])
         ave_length = np.mean(bi_length * bi_weight / sum(bi_weight))
         CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
@@ -157,7 +159,6 @@ class MeetupStrategy:
         # for ego+alters: top above all alters + ego
         alters_L.append(ego_L)
         alters_length.append(length_ego)
-        # TODO: weight
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
         ave_length = np.mean(np.array(alters_length) * np.array(ego_alters_weight) / sum(ego_alters_weight))
         CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
@@ -170,12 +171,13 @@ class MeetupStrategy:
 
     def __ego_meetup(self, ego, tempsave=False):
         """ Private method: obtain all the meetup-cross-entropy info for ego
+        It can save each ego's record temporarily save to csv file
         Args:
             ego: string, a user
             tempsave: whether it will save csv
 
         Return:
-            ego-alter pair all information, DataFrame
+            ego with his all alteres' information, DataFrame
         """
         # extraact information of ego and compute all the statistics for all egos
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
@@ -209,7 +211,15 @@ class MeetupStrategy:
         return meetup_ego
 
     def ego_alter_info(self, start=0, end=None, filesave=False):
-        """ Produce all the ego-alter information"""
+        """ Produce all the ego-alter information
+        Args:
+            start: int, the user started in the userlist, default is 0,
+            end: int, the user ended in the userlist, default is the whole dataset
+            filesave: bool, whether save the file to csv file
+
+        Return:
+            user_stats, and also add to the class self oject, self.user_stats
+        """
         if end is None:
             end = len(self.userlist)
 
@@ -222,6 +232,15 @@ class MeetupStrategy:
         return self.user_stats
 
     def ego_info(self, start=0, end=None, filesave=False):
+        """ Produce all information only related to ego
+        Args:
+            start: int, the user started in the userlist, default is 0,
+            end: int, the user ended in the userlist, default is the whole dataset
+            filesave: bool, whether save the file to csv file
+
+        Return:
+            ego_stats, and also add to the class self oject, self.ego_stats
+        """
         if end is None:
             end = len(self.userlist)
 
@@ -234,9 +253,9 @@ class MeetupStrategy:
                   for i in range(N)]
         ego_log2 = list(length_ego_uni)
         df_ego = [self.userlist[start:end], ego_log2, ego_LZ_entropy, Pi_ego]
-        df_ego = pd.DataFrame(df_ego, columns=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
+        self.ego_stats = pd.DataFrame(df_ego, columns=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
 
         if filesave:
-            df_ego.to_csv('user-ego-info.csv', index=False)
+            self.ego_stats.to_csv('user-ego-info.csv', index=False)
 
-        return df_ego
+        return self.ego_stats
