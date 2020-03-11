@@ -168,8 +168,8 @@ class MeetupStrategy:
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    def ego_meetup(self, ego, tempsave=False):
-        """ Public method: obtain all the meetup-cross-entropy info for ego
+    def __ego_meetup(self, ego, tempsave=False):
+        """ Private method: obtain all the meetup-cross-entropy info for ego
         Args:
             ego: string, a user
             tempsave: whether it will save csv
@@ -213,7 +213,7 @@ class MeetupStrategy:
         if end is None:
             end = len(self.userlist)
 
-        meetup_list = [self.ego_meetup(ego, tempsave=filesave) for ego in self.userlist[start:end]]
+        meetup_list = [self.__ego_meetup(ego, tempsave=filesave) for ego in self.userlist[start:end]]
         self.user_stats = pd.concat(meetup_list, sort=False)
         # save the file
         if filesave:
