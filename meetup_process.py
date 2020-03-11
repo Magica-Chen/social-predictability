@@ -76,7 +76,7 @@ class MeetupStrategy:
             float, cross entropy for a pair of ego and alters
         """
         alters_Lmax = np.amax(alters_L, axis=0)
-        return float((1.0 * length_ego / sum(alters_Lmax)) * np.log2(ave_length))
+        return (1.0 * length_ego / sum(alters_Lmax)) * np.log2(ave_length)
 
     def weight(self, ego_L, alter_L=None):
         """ Public method, compute how important of alter for ego"""
@@ -137,7 +137,7 @@ class MeetupStrategy:
         wb_length = wb[:alterid + 1]
 
         # average lengths
-        ave_length = np.array(alters_length) * np.array(wb_length) / sum(wb_length)
+        ave_length = np.mean(np.array(alters_length) * np.array(wb_length) / sum(wb_length))
 
         # CCE for all above alters
         CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
@@ -206,8 +206,7 @@ class MeetupStrategy:
             end = len(self.userlist)
 
         meetup_list = [self.ego_meetup(ego, tempsave=tempsave) for ego in self.userlist[start:end]]
-        self.user_stats = pd.concat(meetup_list)
-
+        self.user_stats = pd.concat(meetup_list, sort=False)
         # save the file
         if tempsave:
             self.user_stats.to_csv('user-meetup-full.csv', index=False)
@@ -215,7 +214,6 @@ class MeetupStrategy:
         return self.user_stats
 
     def ego_info(self, start=0, end=None, tempsave=False):
-
         if end is None:
             end = len(self.userlist)
 
@@ -227,9 +225,7 @@ class MeetupStrategy:
         Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon) \
                   for i in range(N)]
         ego_log2 = list(length_ego_uni)
-
         df_ego = [self.userlist[start:end], ego_log2, ego_LZ_entropy, Pi_ego]
-
         df_ego = pd.DataFrame(df_ego, columns=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
 
         if tempsave:
