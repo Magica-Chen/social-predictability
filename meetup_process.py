@@ -14,7 +14,7 @@ from entropy_functions import shannon_entropy, entropy, cross_entropy, LZ_entrop
 # if it is smaller than threshold, we will just print NA
 
 def getPredictability(N, S, e=100):
-    if N >= e:
+    if (N >= e) & np.isfinite(S):
         f = lambda x: (((1 - x) / (N - 1)) ** (1 - x)) * x ** x - 2 ** (-S)
         root = mpmath.findroot(f, 1)
         return float(root.real)
@@ -83,12 +83,18 @@ class MeetupStrategy:
     def weight(ego_L, alter_L=None):
         """ Public method, compute how important of alter for ego"""
         # TODO: How to define weight is a problem
-        # Definition 1, which is cloe to the paper's definition
+        # # Definition 1, which is cloe to the paper's definition
+        # if alter_L is None:
+        #     return len(ego_L)
+        # else:
+        #     # count how many elements of ego_L is in alter_L
+        #     return sum(x in alter_L for x in ego_L)
+        # # Definition 2, count how many times of match length of A find in B
         if alter_L is None:
-            return len(ego_L)
+            return np.nonzero(np.array(ego_L) - 1)
         else:
             # count how many elements of ego_L is in alter_L
-            return sum(x in alter_L for x in ego_L)
+            return np.nonzero(np.array(alter_L) - 1)
 
     def __cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters, L, wb, length_alters):
         """ Private method (recursive structure): compute cross entropy related to statistics
@@ -138,9 +144,10 @@ class MeetupStrategy:
         alters_L = L[:alterid + 1]
         alters_length = length_alters[:alterid + 1]
         wb_length = wb[:alterid + 1]
-
         # average lengths
-        ave_length = np.mean(np.array(alters_length) * np.array(wb_length) / sum(wb_length))
+        # use float64 to get Inf if the sum is zero
+        ave_length = np.mean(np.float64(np.array(alters_length) * \
+                                        np.array(wb_length)) / sum(wb_length))
 
         # CCE for all above alters
         CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
@@ -151,7 +158,8 @@ class MeetupStrategy:
         ego_alter_L = [ego_L, L[alterid]]
         bi_length = np.array([length_alters[alterid], length_ego])
         bi_weight = np.array([wb[alterid], self.weight(ego_L)])
-        ave_length = np.mean(bi_length * bi_weight / sum(bi_weight))
+        # use np.float64 to get Inf to overcome the error when the sum is zero
+        ave_length = np.mean(np.float64(bi_length * bi_weight) / sum(bi_weight))
         CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
         Pi_ego_alter = getPredictability(length_ego, CCE_ego_alter, e=self.epsilon)
 
@@ -160,7 +168,9 @@ class MeetupStrategy:
         alters_L.append(ego_L)
         alters_length.append(length_ego)
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
-        ave_length = np.mean(np.array(alters_length) * np.array(ego_alters_weight) / sum(ego_alters_weight))
+        # use np.float64 to get Inf to overcome the error when the sum is zero
+        ave_length = np.mean(np.float64(np.array(alters_length) * \
+                                        np.array(ego_alters_weight)) / sum(ego_alters_weight))
         CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
         Pi_ego_alters = getPredictability(length_ego, CCE_ego_alters, e=self.epsilon)
 
