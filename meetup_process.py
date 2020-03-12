@@ -91,10 +91,10 @@ class MeetupStrategy:
         #     return sum(x in alter_L for x in ego_L)
         # # Definition 2, count how many times of match length of A find in B
         if alter_L is None:
-            return np.nonzero(np.array(ego_L) - 1)
+            return sum(map(lambda x : x>1, ego_L))
         else:
             # count how many elements of ego_L is in alter_L
-            return np.nonzero(np.array(alter_L) - 1)
+            return sum(map(lambda x : x>1, alter_L))
 
     def __cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters, L, wb, length_alters):
         """ Private method (recursive structure): compute cross entropy related to statistics
@@ -146,9 +146,8 @@ class MeetupStrategy:
         wb_length = wb[:alterid + 1]
         # average lengths
         # use float64 to get Inf if the sum is zero
-        ave_length = np.mean(np.float64(np.array(alters_length) * \
-                                        np.array(wb_length)) / sum(wb_length))
-
+        ave_length = np.mean(np.array(alters_length, dtype=np.float64) * \
+                             np.array(wb_length, dtype=np.float64) / sum(wb_length))
         # CCE for all above alters
         CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
         Pi_alters = getPredictability(length_ego, CCE_alters, e=self.epsilon)
@@ -156,10 +155,10 @@ class MeetupStrategy:
         """For only this alter + ego"""
         # for only this alter and ego
         ego_alter_L = [ego_L, L[alterid]]
-        bi_length = np.array([length_alters[alterid], length_ego])
-        bi_weight = np.array([wb[alterid], self.weight(ego_L)])
+        bi_length = np.array([length_alters[alterid], length_ego], dtype=np.float64)
+        bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
         # use np.float64 to get Inf to overcome the error when the sum is zero
-        ave_length = np.mean(np.float64(bi_length * bi_weight) / sum(bi_weight))
+        ave_length = np.mean(bi_length * bi_weight / sum(bi_weight))
         CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
         Pi_ego_alter = getPredictability(length_ego, CCE_ego_alter, e=self.epsilon)
 
@@ -169,8 +168,9 @@ class MeetupStrategy:
         alters_length.append(length_ego)
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
         # use np.float64 to get Inf to overcome the error when the sum is zero
-        ave_length = np.mean(np.float64(np.array(alters_length) * \
-                                        np.array(ego_alters_weight)) / sum(ego_alters_weight))
+        ave_length = np.mean(np.float64(np.array(alters_length, dtype=np.float64) * \
+                                        np.array(ego_alters_weight, dtype=np.float64)) \
+                             / sum(ego_alters_weight))
         CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
         Pi_ego_alters = getPredictability(length_ego, CCE_ego_alters, e=self.epsilon)
 
@@ -179,13 +179,13 @@ class MeetupStrategy:
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    def __ego_meetup(self, ego, tempsave=False):
+    def __ego_meetup(self, ego, tempsave=False, egoshow=False):
         """ Private method: obtain all the meetup-cross-entropy info for ego
         It can save each ego's record temporarily save to csv file
         Args:
             ego: string, a user
             tempsave: whether it will save csv
-
+            egoshow: whether print ego
         Return:
             ego with his all alteres' information, DataFrame
         """
@@ -217,23 +217,26 @@ class MeetupStrategy:
 
         if tempsave:
             meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
+        if egoshow:
+            print(ego)
 
         return meetup_ego
 
-    def ego_alter_info(self, start=0, end=None, filesave=False):
+    def ego_alter_info(self, start=0, end=None, filesave=False, verbose=False):
         """ Produce all the ego-alter information
         Args:
             start: int, the user started in the userlist, default is 0,
             end: int, the user ended in the userlist, default is the whole dataset
             filesave: bool, whether save the file to csv file
-
+            verbose: bool, whether print the ego in step
         Return:
             user_stats, and also add to the class self oject, self.user_stats
         """
         if end is None:
             end = len(self.userlist)
 
-        meetup_list = [self.__ego_meetup(ego, tempsave=filesave) for ego in self.userlist[start:end]]
+        meetup_list = [self.__ego_meetup(ego, tempsave=filesave, egoshow=verbose) \
+                       for ego in self.userlist[start:end]]
         self.user_stats = pd.concat(meetup_list, sort=False)
         # save the file
         if filesave:
