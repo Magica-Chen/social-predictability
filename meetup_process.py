@@ -123,7 +123,7 @@ class MeetupStrategy:
         else:
             alter_length = np.array(lenB, dtype=np.float64)
             alter_wb = np.array(wB, dtype=np.float64)
-            return np.nanmean(alter_length * alter_wb) / np.nansum(alter_wb)
+            return np.nansum(alter_length * alter_wb) / np.nansum(alter_wb)
 
     def __cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters, L, wb, length_alters):
         """ Private method (recursive structure): compute cross entropy related to statistics
