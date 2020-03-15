@@ -315,7 +315,14 @@ class MeetupStrategy:
         return self.ego_stats
 
     def hist_entropy(self, l=12, w=6, n_bins=100, mode='talk'):
-        """ Histogram plot for entropy and more"""
+        """ Histogram plot for entropy and more
+        :param l: int, long
+        :param w: int, width
+        :param n_bins: int, how many bins shown in the plot
+        :param mode: string, see from seaborn, available,'talk', 'notebook',
+        'paper', 'poster'.
+        :return: None
+        """
         LZentropy = self.ego_stats['LZ_entropy'].dropna()
         CrossEntropy = self.user_stats['CE_alter'].dropna()
         CrossEntropyEgo = self.user_stats['CCE_ego_alter'].dropna()
@@ -326,7 +333,7 @@ class MeetupStrategy:
         sns.set_context(mode)
         sns.distplot(LZentropy, label='LZ Entropy', bins=n_bins)
         sns.distplot(CrossEntropy, label='Cross Entropy: alter only', bins=n_bins)
-        sns.distplot(CrossEntropyEgo, label='Cross Entropy: ego + alter', bins=n_bins)
+        sns.distplot(CrossEntropyEgo, label='Cumulative Cross Entropy: ego + alter', bins=n_bins)
         sns.distplot(CumCrossEntropy, label='Cumulative Cross Entropy: alters only', \
                      bins=n_bins)
         sns.distplot(CumCrossEntropyEgo, label='Cumulative Cross Entropy: ego + alters', \
@@ -337,7 +344,14 @@ class MeetupStrategy:
         plt.show()
 
     def hist_pred(self, l=12, w=6, n_bins=100, mode='talk'):
-        """ Histogram plot for predictability and theirs"""
+        """ Histogram plot for predictability and theirs
+        :param l: int, long
+        :param w: int, width
+        :param n_bins: int, how many bins shown in the plot
+        :param mode: string, see from seaborn, available,'talk', 'notebook',
+        'paper', 'poster'.
+        :return: None
+        """
         pred = self.ego_stats['Pi'].dropna()
         pred_alter = self.user_stats['Pi_alter'].dropna()
         pred_alter_ego = self.user_stats['Pi_ego_alter'].dropna()
@@ -359,6 +373,16 @@ class MeetupStrategy:
         plt.show()
 
     def num_point_plot(self, name, threshold=100, interval=None, l=15, w=6, mode='talk'):
+        """ number of included alters vs entropy or predictability
+        :param name: string, currently only accept 'entropy' or 'predictability'
+        :param threshold: int, the largest number of alters included
+        :param interval: int, the interval shown in axis
+        :param l: int, long
+        :param w: int, width
+        :param mode: string, see from seaborn, available,'talk', 'notebook',
+        'paper', 'poster'.
+        :return: None
+        """
         fig, ax = plt.subplots(figsize=(l, w))
         sns.set_context(mode)
 
