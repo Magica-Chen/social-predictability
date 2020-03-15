@@ -3,14 +3,15 @@
 
 # entropy_functions.py
 # (c) Zexun Chen, 2020-03-10
-# sxtpy2010@gmail.comf
+# sxtpy2010@gmail.com
 
 import pandas as pd
 import numpy as np
 import mpmath
 from entropy_functions import shannon_entropy, entropy, \
     cross_entropy, LZ_entropy, LZ_cross_entropy
-
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # As required by algorithm, N should be large, we set e as the threshold of N.
 # if it is smaller than threshold, we will just print NA
@@ -240,7 +241,7 @@ class MeetupStrategy:
         meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
 
         if tempsave:
-            meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
+            meetup_ego.to_csv('results-user-meetup-part.csv', index=False, mode='a', header=False)
         if egoshow:
             print(ego)
 
@@ -264,7 +265,7 @@ class MeetupStrategy:
         self.user_stats = pd.concat(meetup_list, sort=False)
         # save the file
         if filesave:
-            self.user_stats.to_csv('user-meetup-full.csv', index=False)
+            self.user_stats.to_csv('results/user-meetup-full.csv', index=False)
 
         return self.user_stats
 
@@ -289,14 +290,68 @@ class MeetupStrategy:
         Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon) \
                   for i in range(N)]
         ego_log2 = list(length_ego_uni)
-        df_ego = {'userid_x': self.userlist[start:end],
-                  'ego_info': ego_log2,
-                  'LZ_entropy': ego_LZ_entropy,
-                  'Pi':Pi_ego
-        }
-        self.ego_stats = pd.DataFrame(data=df_ego)
+        df_ego = pd.DataFrame(data={'userid_x': self.userlist[start:end],
+                                    'ego_info': ego_log2,
+                                    'LZ_entropy': ego_LZ_entropy,
+                                    'Pi': Pi_ego
+                                    }
+                              )
+        df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego].\
+                              tail(1)[['userid_x',
+                                       'CCE_alters',
+                                       'CCE_ego_alters',
+                                       'Pi_alters',
+                                       'Pi_ego_alters'
+                                       ]] for ego in self.userlist[start:end]
+                               ]
+                              )
+        self.ego_stats = df_ego.merge(df_alters, on='userid_x')
 
         if filesave:
-            self.ego_stats.to_csv('user-ego-info.csv', index=False)
+            self.ego_stats.to_csv('results/user-ego-info.csv', index=False)
 
         return self.ego_stats
+
+    def hist_entropy(self, l=12, w=6, n_bins=100):
+        """ Histogram plot for entropy and more"""
+        LZentropy = self.ego_stats['LZ_entropy'].dropna()
+        CrossEntropy = self.user_stats['CE_alter'].dropna()
+        CrossEntropyEgo = self.user_stats['CCE_ego_alter'].dropna()
+        CumCrossEntropy = self.ego_stats['CCE_alters'].dropna()
+        CumCrossEntropyEgo = self.ego_stats['CCE_ego_alters'].dropna()
+
+        fig, ax = plt.subplots(figsize=(l, w))
+        sns.set_context('talk')
+        sns.distplot(LZentropy, label='LZ Entropy', bins=n_bins)
+        sns.distplot(CrossEntropy, label='Cross Entropy: alter only', bins=n_bins)
+        sns.distplot(CrossEntropyEgo, label='Cross Entropy: ego + alter', bins=n_bins)
+        sns.distplot(CumCrossEntropy, label='Cumulative Cross Entropy: alters only', \
+                     bins=n_bins)
+        sns.distplot(CumCrossEntropyEgo, label='Cumulative Cross Entropy: ego + alters', \
+                     bins=n_bins)
+        # plt.title('Entropy and Cross entropy')
+        ax.set(xlabel='Entropy (bits)', ylabel='Density')
+        ax.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
+        plt.show()
+
+    def hist_pred(self, l=12, w=6, n_bins=100):
+        """ Histogram plot for predictability and theirs"""
+        pred = self.ego_stats['Pi'].dropna()
+        pred_alter = self.user_stats['Pi_alter'].dropna()
+        pred_alter_ego = self.user_stats['Pi_ego_alter'].dropna()
+        pred_alters = self.ego_stats['Pi_alters'].dropna()
+        pred_alters_ego = self.ego_stats['Pi_ego_alters'].dropna()
+
+        fig, ax = plt.subplots(figsize=(l, w))
+        sns.set_context('talk')
+        sns.distplot(pred, label=r'$\Pi$: ego', bins=n_bins)
+        sns.distplot(pred_alter, label=r'$\Pi$: alter only', bins=n_bins)
+        sns.distplot(pred_alter_ego, label=r'$\Pi$: ego + alter', bins=n_bins)
+        sns.distplot(pred_alters, label=r'$\Pi$: alters only', \
+                     bins=n_bins)
+        sns.distplot(pred_alters_ego, label=r'$\Pi$: ego + alters', \
+                     bins=n_bins)
+        # plt.title('Entropy and Cross entropy')
+        ax.set(xlabel='Predictability $\Pi$', ylabel='Density')
+        ax.legend()
+        plt.show()
