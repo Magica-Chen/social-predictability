@@ -12,9 +12,11 @@ from entropy_functions import shannon_entropy, entropy, \
     cross_entropy, LZ_entropy, LZ_cross_entropy
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 # As required by algorithm, N should be large, we set e as the threshold of N.
 # if it is smaller than threshold, we will just print NA
+
 
 def getPredictability(N, S, e=100):
     if (N >= e) & np.isfinite(S):
@@ -312,7 +314,7 @@ class MeetupStrategy:
 
         return self.ego_stats
 
-    def hist_entropy(self, l=12, w=6, n_bins=100):
+    def hist_entropy(self, l=12, w=6, n_bins=100, mode='talk'):
         """ Histogram plot for entropy and more"""
         LZentropy = self.ego_stats['LZ_entropy'].dropna()
         CrossEntropy = self.user_stats['CE_alter'].dropna()
@@ -321,7 +323,7 @@ class MeetupStrategy:
         CumCrossEntropyEgo = self.ego_stats['CCE_ego_alters'].dropna()
 
         fig, ax = plt.subplots(figsize=(l, w))
-        sns.set_context('talk')
+        sns.set_context(mode)
         sns.distplot(LZentropy, label='LZ Entropy', bins=n_bins)
         sns.distplot(CrossEntropy, label='Cross Entropy: alter only', bins=n_bins)
         sns.distplot(CrossEntropyEgo, label='Cross Entropy: ego + alter', bins=n_bins)
@@ -334,7 +336,7 @@ class MeetupStrategy:
         ax.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
         plt.show()
 
-    def hist_pred(self, l=12, w=6, n_bins=100):
+    def hist_pred(self, l=12, w=6, n_bins=100, mode='talk'):
         """ Histogram plot for predictability and theirs"""
         pred = self.ego_stats['Pi'].dropna()
         pred_alter = self.user_stats['Pi_alter'].dropna()
@@ -343,7 +345,7 @@ class MeetupStrategy:
         pred_alters_ego = self.ego_stats['Pi_ego_alters'].dropna()
 
         fig, ax = plt.subplots(figsize=(l, w))
-        sns.set_context('talk')
+        sns.set_context(mode)
         sns.distplot(pred, label=r'$\Pi$: ego', bins=n_bins)
         sns.distplot(pred_alter, label=r'$\Pi$: alter only', bins=n_bins)
         sns.distplot(pred_alter_ego, label=r'$\Pi$: ego + alter', bins=n_bins)
@@ -354,4 +356,42 @@ class MeetupStrategy:
         # plt.title('Entropy and Cross entropy')
         ax.set(xlabel='Predictability $\Pi$', ylabel='Density')
         ax.legend()
+        plt.show()
+
+    def num_point_plot(self, name, threshold=100, interval=None, l=15, w=6, mode='talk'):
+        fig, ax = plt.subplots(figsize=(l, w))
+        sns.set_context(mode)
+
+        if name is 'entropy':
+            CCE = pd.melt(self.user_stats, id_vars=['Included Rank'], \
+                          value_vars=['CCE_ego_alters', 'CCE_alters'], \
+                          var_name='CCE')
+            baseline = self.ego_stats['LZ_entropy'].mean()
+        elif name is 'predictability':
+            CCE = pd.melt(self.user_stats, id_vars=['Included Rank'], \
+                          value_vars=['Pi_ego_alters', 'Pi_alters'], \
+                          var_name='CCE')
+            baseline = self.ego_stats['Pi'].mean()
+        else:
+            raise ValueError('Only available for entropy and predictability')
+
+        sns.pointplot(x="Included Rank", y="value", hue='CCE',
+                      data=CCE[CCE['Included Rank'] < threshold], \
+                      ci=95, join=False, ax=ax)
+        ax.axhline(y=baseline, color='black', linestyle='--', label='Ego')
+        leg_handles = ax.get_legend_handles_labels()[0]
+        ax.legend(leg_handles, ['Ego only', 'Alters + ego', 'Alters only'])
+
+        if interval is None:
+            interval = round(threshold / 20)
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(interval))
+        ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+
+        if name is 'predictability':
+            vals = ax.get_yticks()
+            ax.set_yticklabels(['{:,.2%}'.format(x) for x in vals])
+            ax.set(xlabel='Number of included alters', ylabel='Predictability')
+        elif name is 'entropy':
+            ax.set(xlabel='Number of included alters', ylabel='Cumulative Cross Entropy')
+
         plt.show()
