@@ -13,6 +13,8 @@ from entropy_functions import shannon_entropy, entropy, \
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import random
+
 
 # As required by algorithm, N should be large, we set e as the threshold of N.
 # if it is smaller than threshold, we will just print NA
@@ -27,12 +29,19 @@ def getPredictability(N, S, e=100):
         return np.nan
 
 
-class MeetupStrategy:
+SEED = 2020  # set random seed for our random function
+
+
+class MeetupStrategy(object):
     """
     Create a Meetup Strategy class to include all the computation
     """
 
-    def __init__(self, userlist, user_meetup, placeidT, epsilon=2, user_stats=None, ego_stats=None):
+    def __init__(self, userlist, user_meetup, placeidT, epsilon=2, \
+                 user_stats=None, ego_stats=None,
+                 tr_user_stats=None, tr_ego_stats=None,
+                 sr_user_stats=None, sr_ego_stats=None,
+                 user_stats_all=None, ego_stats_all=None):
         """
         MeetupStrategy needs to have several important inputs,
         userlist: list, all userid
@@ -50,6 +59,12 @@ class MeetupStrategy:
         self.epsilon = epsilon
         self.user_stats = user_stats
         self.ego_stats = ego_stats
+        self.tr_user_stats = tr_user_stats
+        self.tr_ego_stats = tr_ego_stats
+        self.sr_user_stats = sr_user_stats
+        self.sr_ego_stats = sr_ego_stats
+        self.user_stats_all = user_stats_all
+        self.ego_stats_all = ego_stats_all
 
     def _extract_info(self, user):
         """ Protect method: extract temporal-spatial information for each user
@@ -110,7 +125,7 @@ class MeetupStrategy:
             # count how many elements of ego_L is in alter_L
             return sum(map(lambda x: x > 1, alter_L))
 
-    def __ave(self, lenB, wB):
+    def _ave(self, lenB, wB):
         """ Compute the average legnth of B
         Args:
             lenB: list, a list of the length of placeid of B, it might be nan
@@ -126,10 +141,14 @@ class MeetupStrategy:
         else:
             alter_length = np.array(lenB, dtype=np.float64)
             alter_wb = np.array(wB, dtype=np.float64)
-            return np.nansum(alter_length * alter_wb) / np.nansum(alter_wb)
+            if np.nansum(alter_wb) == 0:
+                return np.nan
+            else:
+                return np.nansum(alter_length * alter_wb) / np.nansum(alter_wb)
 
-    def __cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters, L, wb, length_alters):
-        """ Private method (recursive structure): compute cross entropy related to statistics
+    def _cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters,
+                               L, wb, length_alters, temp_shuffle=False):
+        """ Protected method (recursive structure): compute cross entropy related to statistics
         Args:
             ego_time: datetime,
             ego_placeid: list,
@@ -139,6 +158,7 @@ class MeetupStrategy:
             L: nested list, match legnths for all alters before the selected alter
             wb: list, weights for for all alters before the selected alter
             length_alters: list, length of visited placeids for all alters before the selected alter
+            temp_shuffle: bool, whether do shuffle for alter's placeid series
 
         Return:
             alter related information
@@ -150,6 +170,8 @@ class MeetupStrategy:
         rank = alterid + 1
 
         alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
+        if temp_shuffle:
+            random.shuffle(alter_placeid)
 
         alter_log2 = np.log2(length_alter_uniq)
         """Be careful: W1 in cross_entropy is B in the paper, W2 is cross_entropy is A in the paper """
@@ -168,7 +190,7 @@ class MeetupStrategy:
         """ For all above alters """
         # Obtain the basic information to extend L, wb, length_alters
         # obtain the cross-parsed match length for this ego-alter pair
-        L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs, \
+        L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                                       lambdas=True, e=self.epsilon)
         wb[alterid] = self.weight(ego_L, L[alterid])
         # length of alter placeid
@@ -179,7 +201,7 @@ class MeetupStrategy:
         alters_length = length_alters[:alterid + 1]
         wb_length = wb[:alterid + 1]
         # average lengths
-        ave_length = self.__ave(alters_length, wb_length)
+        ave_length = self._ave(alters_length, wb_length)
         # CCE for all above alters
         CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
         Pi_alters = getPredictability(length_ego, CCE_alters, e=self.epsilon)
@@ -189,7 +211,7 @@ class MeetupStrategy:
         ego_alter_L = [ego_L, L[alterid]]
         bi_length = np.array([length_alters[alterid], length_ego], dtype=np.float64)
         bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
-        ave_length = self.__ave(bi_length, bi_weight)
+        ave_length = self._ave(bi_length, bi_weight)
         CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
         Pi_ego_alter = getPredictability(length_ego, CCE_ego_alter, e=self.epsilon)
 
@@ -198,7 +220,7 @@ class MeetupStrategy:
         alters_L.append(ego_L)
         alters_length.append(length_ego)
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
-        ave_length = self.__ave(alters_length, ego_alters_weight)
+        ave_length = self._ave(alters_length, ego_alters_weight)
         CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
         Pi_ego_alters = getPredictability(length_ego, CCE_ego_alters, e=self.epsilon)
 
@@ -207,13 +229,16 @@ class MeetupStrategy:
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    def __ego_meetup(self, ego, tempsave=False, egoshow=False):
-        """ Private method: obtain all the meetup-cross-entropy info for ego
+    def _ego_meetup(self, ego, tempsave=False, egoshow=False,
+                    temp_shuffle=False, social_shuffle=False):
+        """ Protected method: obtain all the meetup-cross-entropy info for ego
         It can save each ego's record temporarily save to csv file
         Args:
             ego: string, a user
-            tempsave: whether it will save csv
-            egoshow: whether print ego
+            tempsave: bool, whether it will save csv
+            egoshow: bool, whether print ego
+            temp_shuffle: bool, whether do temporal control
+            social_shuffle: bool, whether do social control
         Return:
             ego with his all alteres' information, DataFrame
         """
@@ -222,8 +247,12 @@ class MeetupStrategy:
 
         # compute the cumulative cross entropy for an ego
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
-        df_ego_meetup = self.user_meetup[self.user_meetup['userid_x'] == ego]
         N_alters = len(alters)
+
+        if social_shuffle:
+            interim = self.userlist.copy()
+            interim.remove(ego)
+            alters = random.choices(interim, k=N_alters)
 
         ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         # initial space
@@ -231,45 +260,84 @@ class MeetupStrategy:
         wb = [None] * N_alters
         length_alters = [None] * N_alters
 
-        ego_stats = [self.__cross_entropy_element(ego_time, ego_placeid, ego_L, alter, alters, \
-                                                  L, wb, length_alters) for alter in alters]
-        ego_stats = pd.DataFrame(ego_stats, columns=[
-            'userid_y', 'Included Rank', 'Weight', 'alter_info',
-            'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
-            'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
-        ])
+        ego_stats = [self._cross_entropy_element(ego_time, ego_placeid, ego_L, alter, alters,
+                                                 L, wb, length_alters,
+                                                 temp_shuffle=temp_shuffle) for alter in alters]
+        if temp_shuffle:
+            ego_stats = pd.DataFrame(ego_stats, columns=[
+                'userid_y', 'Included Rank_tr', 'Weight_tr', 'alter_info_tr',
+                'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
+                'Pi_alter_tr', 'Pi_alters_tr', 'Pi_ego_alter_tr', 'Pi_ego_alters_tr',
+            ])
+            meetup_ego = ego_stats
+            meetup_ego.insert(0, 'userid_x', ego)
+        elif social_shuffle:
+            ego_stats = pd.DataFrame(ego_stats, columns=[
+                'userid_y', 'Included Rank_sr', 'Weight_sr', 'alter_info_sr',
+                'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
+                'Pi_alter_sr', 'Pi_alters_sr', 'Pi_ego_alter_sr', 'Pi_ego_alters_sr',
+            ])
+            meetup_ego = ego_stats
+            meetup_ego.insert(0, 'userid_x', ego)
+        else:
+            ego_stats = pd.DataFrame(ego_stats, columns=[
+                'userid_y', 'Included Rank', 'Weight', 'alter_info',
+                'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
+                'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
+            ])
 
-        # combine two parts of meetup information
-        meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
+            # combine two parts of meetup information
+            df_ego_meetup = self.user_meetup[self.user_meetup['userid_x'] == ego]
+            meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
 
         if tempsave:
-            meetup_ego.to_csv('results-user-meetup-part.csv', index=False, mode='a', header=False)
+            meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
         if egoshow:
             print(ego)
 
         return meetup_ego
 
-    def ego_alter_info(self, start=0, end=None, filesave=False, verbose=False):
+    def ego_alter_info(self, start=0, end=None, filesave=False, verbose=False,
+                       temp_shuffle=False, social_shuffle=False):
         """ Produce all the ego-alter information
         Args:
             start: int, the user started in the userlist, default is 0,
             end: int, the user ended in the userlist, default is the whole dataset
             filesave: bool, whether save the file to csv file
             verbose: bool, whether print the ego in step
+            temp_shuffle: bool, whether do the temp_shuffle
+            social_shuffle: bool, whether do the social shuffle
+
         Return:
             user_stats, and also add to the class self oject, self.user_stats
         """
         if end is None:
             end = len(self.userlist)
 
-        meetup_list = [self.__ego_meetup(ego, tempsave=filesave, egoshow=verbose) \
+        random.seed(SEED)
+        meetup_list = [self._ego_meetup(ego, tempsave=filesave, egoshow=verbose,
+                                        temp_shuffle=temp_shuffle,
+                                        social_shuffle=social_shuffle)
                        for ego in self.userlist[start:end]]
-        self.user_stats = pd.concat(meetup_list, sort=False)
-        # save the file
-        if filesave:
-            self.user_stats.to_csv('results/user-meetup-full.csv', index=False)
+        user_stats = pd.concat(meetup_list, sort=False)
 
-        return self.user_stats
+        if temp_shuffle:
+            self.tr_user_stats = user_stats
+            # save the file
+            if filesave:
+                user_stats.to_csv('user-meetup-info-tr.csv', index=False)
+        elif social_shuffle:
+            self.sr_user_stats = user_stats
+            # save the file
+            if filesave:
+                user_stats.to_csv('user-meetup-info-sr.csv', index=False)
+        else:
+            self.user_stats = user_stats
+            # save the file
+            if filesave:
+                user_stats.to_csv('user-meetup-info.csv', index=False)
+
+        return user_stats
 
     def ego_info(self, start=0, end=None, filesave=False):
         """ Produce all information only related to ego
@@ -298,21 +366,69 @@ class MeetupStrategy:
                                     'Pi': Pi_ego
                                     }
                               )
-        df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego].\
-                              tail(1)[['userid_x',
-                                       'CCE_alters',
-                                       'CCE_ego_alters',
-                                       'Pi_alters',
-                                       'Pi_ego_alters'
-                                       ]] for ego in self.userlist[start:end]
-                               ]
-                              )
-        self.ego_stats = df_ego.merge(df_alters, on='userid_x')
+        if self.user_stats is not None:
+            df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego]. \
+                                  tail(1)[['userid_x',
+                                           'CCE_alters',
+                                           'CCE_ego_alters',
+                                           'Pi_alters',
+                                           'Pi_ego_alters'
+                                           ]] for ego in self.userlist[start:end]
+                                   ]
+                                  )
+            self.ego_stats = df_ego.merge(df_alters, on='userid_x')
+            if filesave:
+                self.ego_stats.to_csv('user-ego-info.csv', index=False)
 
-        if filesave:
-            self.ego_stats.to_csv('results/user-ego-info.csv', index=False)
+        if self.tr_user_stats is not None:
+            df_alters_tr = pd.concat([self.tr_user_stats[self.tr_user_stats['userid_x'] == ego]. \
+                                     tail(1)[['userid_x',
+                                              'CCE_alters_tr',
+                                              'CCE_ego_alters_tr',
+                                              'Pi_alters_tr',
+                                              'Pi_ego_alters_tr'
+                                              ]] for ego in self.userlist[start:end]
+                                      ]
+                                     )
+            self.tr_ego_stats = df_ego.merge(df_alters_tr, on='userid_x')
+            if filesave:
+                self.tr_ego_stats.to_csv('user-ego-info_tr.csv', index=False)
 
-        return self.ego_stats
+        if self.sr_user_stats is not None:
+            df_alters_sr = pd.concat([self.sr_user_stats[self.sr_user_stats['userid_x'] == ego]. \
+                                     tail(1)[['userid_x',
+                                              'CCE_alters_sr',
+                                              'CCE_ego_alters_sr',
+                                              'Pi_alters_sr',
+                                              'Pi_ego_alters_sr'
+                                              ]] for ego in self.userlist[start:end]
+                                      ]
+                                     )
+            self.sr_ego_stats = df_ego.merge(df_alters_sr, on='userid_x')
+            if filesave:
+                self.sr_ego_stats.to_csv('user-ego-info_sr.csv', index=False)
+
+        return self.ego_stats, self.tr_ego_stats, self.sr_ego_stats
+
+    def merge_stats(self, filesave=False):
+        if all(v is not None for v in [self.user_stats, self.tr_user_stats, self.sr_user_stats]):
+            left = self.user_stats.merge(self.tr_user_stats, on=['userid_x',
+                                                                 'userid_y']
+                                         ).drop(columns=['userid_y']).reset_index(drop=True)
+            right = self.sr_user_stats.drop(columns=['userid_y']).reset_index(drop=True)
+            self.user_stats_all = left.merge(right, left_index=True, right_index=True)
+
+            if filesave:
+                self.user_stats_all.to_csv('user-meetup-info-all.csv', index=False)
+
+        if all(v is not None for v in [self.ego_stats, self.tr_ego_stats, self.sr_ego_stats]):
+            self.ego_stats_all = self.ego_stats.merge(self.tr_ego_stats, on=['userid_x',
+                                                                             'ego_info',
+                                                                             'LZ_entropy',
+                                                                             'Pi']).merge(
+                self.sr_ego_stats, on=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
+            if filesave:
+                self.ego_stats_all.to_csv('user-ego-info-all.csv', index=False)
 
     def hist_entropy(self, l=12, w=6, n_bins=100, mode='talk'):
         """ Histogram plot for entropy and more
