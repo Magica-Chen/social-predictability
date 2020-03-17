@@ -37,7 +37,7 @@ class MeetupStrategy(object):
     Create a Meetup Strategy class to include all the computation
     """
 
-    def __init__(self, userlist, user_meetup, placeidT, epsilon=2, \
+    def __init__(self, userlist, user_meetup, placeidT, epsilon=2,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
                  sr_user_stats=None, sr_ego_stats=None,
@@ -171,6 +171,8 @@ class MeetupStrategy(object):
         rank = alterid + 1
 
         alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
+        """ Temporal control: given ego, we can find alters, for each alter, we shuffle the sequence of 
+        placeid as random """
         if temp_shuffle:
             random.shuffle(alter_placeid)
 
@@ -250,6 +252,8 @@ class MeetupStrategy(object):
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
         N_alters = len(alters)
 
+        """ Social control: given an ego, we can find its alters. Keep the number of alters, we randomly
+        produce alters for ego"""
         if social_shuffle:
             interim = self.userlist.copy()
             interim.remove(ego)
@@ -353,12 +357,11 @@ class MeetupStrategy(object):
         if end is None:
             end = len(self.userlist)
 
-        ego_time, length_ego_uni, length_ego, ego_placeid = zip(*[self._extract_info(ego) \
+        ego_time, length_ego_uni, length_ego, ego_placeid = zip(*[self._extract_info(ego)
                                                                   for ego in self.userlist[start:end]])
         N = end - start
-        ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) \
-                          for i in range(N)]
-        Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon) \
+        ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
+        Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon)
                   for i in range(N)]
         ego_log2 = list(length_ego_uni)
         df_ego = pd.DataFrame(data={'userid_x': self.userlist[start:end],
@@ -368,7 +371,7 @@ class MeetupStrategy(object):
                                     }
                               )
         if self.user_stats is not None:
-            df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego]. \
+            df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego].
                                   tail(1)[['userid_x',
                                            'CCE_alters',
                                            'CCE_ego_alters',
@@ -382,7 +385,7 @@ class MeetupStrategy(object):
                 self.ego_stats.to_csv('user-ego-info.csv', index=False)
 
         if self.tr_user_stats is not None:
-            df_alters_tr = pd.concat([self.tr_user_stats[self.tr_user_stats['userid_x'] == ego]. \
+            df_alters_tr = pd.concat([self.tr_user_stats[self.tr_user_stats['userid_x'] == ego].
                                      tail(1)[['userid_x',
                                               'CCE_alters_tr',
                                               'CCE_ego_alters_tr',
@@ -396,7 +399,7 @@ class MeetupStrategy(object):
                 self.tr_ego_stats.to_csv('user-ego-info_tr.csv', index=False)
 
         if self.sr_user_stats is not None:
-            df_alters_sr = pd.concat([self.sr_user_stats[self.sr_user_stats['userid_x'] == ego]. \
+            df_alters_sr = pd.concat([self.sr_user_stats[self.sr_user_stats['userid_x'] == ego].
                                      tail(1)[['userid_x',
                                               'CCE_alters_sr',
                                               'CCE_ego_alters_sr',
@@ -412,6 +415,13 @@ class MeetupStrategy(object):
         return self.ego_stats, self.tr_ego_stats, self.sr_ego_stats
 
     def merge_stats(self, filesave=False):
+        """merge all user-stats and ego-stats if they exist
+        Args:
+            filesave: whether save the final merged file
+
+        Return:
+            None
+        """
         if all(v is not None for v in [self.user_stats, self.tr_user_stats, self.sr_user_stats]):
             left = self.user_stats.merge(self.tr_user_stats, on=['userid_x',
                                                                  'userid_y']
@@ -451,10 +461,8 @@ class MeetupStrategy(object):
         sns.distplot(LZentropy, label='LZ Entropy', bins=n_bins)
         sns.distplot(CrossEntropy, label='Cross Entropy: alter only', bins=n_bins)
         sns.distplot(CrossEntropyEgo, label='Cumulative Cross Entropy: ego + alter', bins=n_bins)
-        sns.distplot(CumCrossEntropy, label='Cumulative Cross Entropy: alters only', \
-                     bins=n_bins)
-        sns.distplot(CumCrossEntropyEgo, label='Cumulative Cross Entropy: ego + alters', \
-                     bins=n_bins)
+        sns.distplot(CumCrossEntropy, label='Cumulative Cross Entropy: alters only', bins=n_bins)
+        sns.distplot(CumCrossEntropyEgo, label='Cumulative Cross Entropy: ego + alters', bins=n_bins)
         # plt.title('Entropy and Cross entropy')
         ax.set(xlabel='Entropy (bits)', ylabel='Density')
         ax.legend(loc='upper left', bbox_to_anchor=(1.04, 1))
@@ -480,16 +488,15 @@ class MeetupStrategy(object):
         sns.distplot(pred, label=r'$\Pi$: ego', bins=n_bins)
         sns.distplot(pred_alter, label=r'$\Pi$: alter only', bins=n_bins)
         sns.distplot(pred_alter_ego, label=r'$\Pi$: ego + alter', bins=n_bins)
-        sns.distplot(pred_alters, label=r'$\Pi$: alters only', \
-                     bins=n_bins)
-        sns.distplot(pred_alters_ego, label=r'$\Pi$: ego + alters', \
-                     bins=n_bins)
+        sns.distplot(pred_alters, label=r'$\Pi$: alters only', bins=n_bins)
+        sns.distplot(pred_alters_ego, label=r'$\Pi$: ego + alters', bins=n_bins)
         # plt.title('Entropy and Cross entropy')
         ax.set(xlabel='Predictability $\Pi$', ylabel='Density')
         ax.legend()
         plt.show()
 
-    def num_point_plot(self, name, threshold=100, interval=None, l=15, w=6, mode='talk'):
+    def num_point_plot(self, name, threshold=100, interval=None, l=15, w=6, mode='talk',
+                       control=False):
         """ number of included alters vs entropy or predictability
         :param name: string, currently only accept 'entropy' or 'predictability'
         :param threshold: int, the largest number of alters included
@@ -498,30 +505,60 @@ class MeetupStrategy(object):
         :param w: int, width
         :param mode: string, see from seaborn, available,'talk', 'notebook',
         'paper', 'poster'.
+        :param control: whether add temporal control and social control in the plot
+
         :return: None
         """
         fig, ax = plt.subplots(figsize=(l, w))
         sns.set_context(mode)
 
         if name is 'entropy':
-            CCE = pd.melt(self.user_stats, id_vars=['Included Rank'], \
-                          value_vars=['CCE_ego_alters', 'CCE_alters'], \
-                          var_name='CCE')
-            baseline = self.ego_stats['LZ_entropy'].mean()
+            if control:
+                CCE = pd.melt(self.user_stats_all, id_vars=['Included Rank'],
+                              value_vars=['CCE_ego_alters', 'CCE_alters',
+                                          'CCE_ego_alters_tr', 'CCE_alters_tr',
+                                          'CCE_ego_alters_sr', 'CCE_alters_sr'],
+                              var_name='CCE')
+                baseline = self.ego_stats_all['LZ_entropy'].mean()
+                CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
+                              'Alters + ego (TC)', 'Alters only (TC)',
+                              'Alters + ego (SC)', 'Alters only (SC)']
+            else:
+                CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
+                              value_vars=['CCE_ego_alters', 'CCE_alters'],
+                              var_name='CCE')
+                baseline = self.ego_stats['LZ_entropy'].mean()
+                CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
+
         elif name is 'predictability':
-            CCE = pd.melt(self.user_stats, id_vars=['Included Rank'], \
-                          value_vars=['Pi_ego_alters', 'Pi_alters'], \
-                          var_name='CCE')
-            baseline = self.ego_stats['Pi'].mean()
+            if control:
+                CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
+                              value_vars=['Pi_ego_alters', 'Pi_alters',
+                                          'Pi_ego_alters_tr', 'Pi_alters_tr',
+                                          'Pi_ego_alters_sr', 'Pi_alters_sr'
+                                          ],
+                              var_name='CCE')
+                baseline = self.ego_stats['Pi'].mean()
+                CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
+                              'Alters + ego (TC)', 'Alters only (TC)',
+                              'Alters + ego (SC)', 'Alters only (SC)']
+
+            else:
+                CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
+                              value_vars=['Pi_ego_alters', 'Pi_alters'],
+                              var_name='CCE')
+                baseline = self.ego_stats['Pi'].mean()
+                CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
+
         else:
             raise ValueError('Only available for entropy and predictability')
 
         sns.pointplot(x="Included Rank", y="value", hue='CCE',
-                      data=CCE[CCE['Included Rank'] < threshold], \
+                      data=CCE[CCE['Included Rank'] < threshold],
                       ci=95, join=False, ax=ax)
         ax.axhline(y=baseline, color='black', linestyle='--', label='Ego')
         leg_handles = ax.get_legend_handles_labels()[0]
-        ax.legend(leg_handles, ['Ego only', 'Alters + ego', 'Alters only'])
+        ax.legend(leg_handles, CCE_legend)
 
         if interval is None:
             interval = round(threshold / 20)
