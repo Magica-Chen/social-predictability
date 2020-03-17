@@ -97,6 +97,7 @@ class MeetupStrategy(object):
             float, cross entropy for a pair of ego and alters
         """
         # remove all the alters_L with nan
+        alters_L = list(filter(None, alters_L))
         clean_alters_L = [x for x in alters_L if ~np.isnan(x).all()]
         alters_Lmax = np.amax(clean_alters_L, axis=0)
         return (1.0 * length_ego / sum(alters_Lmax)) * np.log2(ave_length)
@@ -133,7 +134,7 @@ class MeetupStrategy(object):
         """
         # since wB is compute by LZ algorithm, it maybe nan
         # lenB is the length of series
-        if np.isnan(wB).all() | np.isnan(lenB).all():
+        if np.isnan(list(filter(None, wB))).all() | np.isnan(list(filter(None, lenB))).all():
             # another condition is that the product is nan
             # but according to our weight definition,
             # if lenB is nan, wB must be nan
