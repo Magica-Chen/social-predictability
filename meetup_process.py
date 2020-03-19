@@ -495,8 +495,8 @@ class MeetupStrategy(object):
         ax.legend()
         plt.show()
 
-    def num_point_plot(self, name, threshold=100, interval=None, l=15, w=6, mode='talk',
-                       control=False):
+    def num_point_plot(self, name, threshold=None, interval=None, l=15, w=6, mode='talk',
+                       control=False, figsave=False, format='pdf'):
         """ number of included alters vs entropy or predictability
         :param name: string, currently only accept 'entropy' or 'predictability'
         :param threshold: int, the largest number of alters included
@@ -506,6 +506,8 @@ class MeetupStrategy(object):
         :param mode: string, see from seaborn, available,'talk', 'notebook',
         'paper', 'poster'.
         :param control: whether add temporal control and social control in the plot
+        :param figsave: whether the figure will be saved
+        :param format: png, eps, pdf, and so on.
 
         :return: None
         """
@@ -523,25 +525,31 @@ class MeetupStrategy(object):
                 CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
                               'Alters + ego (TC)', 'Alters only (TC)',
                               'Alters + ego (SC)', 'Alters only (SC)']
+                if threshold is None:
+                    threshold = len(set(self.user_stats_all['Included Rank'].tolist()))
             else:
                 CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
                               value_vars=['CCE_ego_alters', 'CCE_alters'],
                               var_name='CCE')
                 baseline = self.ego_stats['LZ_entropy'].mean()
                 CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
+                if threshold is None:
+                    threshold = len(set(self.user_stats['Included Rank'].tolist()))
 
         elif name is 'predictability':
             if control:
-                CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
+                CCE = pd.melt(self.user_stats_all, id_vars=['Included Rank'],
                               value_vars=['Pi_ego_alters', 'Pi_alters',
                                           'Pi_ego_alters_tr', 'Pi_alters_tr',
                                           'Pi_ego_alters_sr', 'Pi_alters_sr'
                                           ],
                               var_name='CCE')
-                baseline = self.ego_stats['Pi'].mean()
+                baseline = self.ego_stats_all['Pi'].mean()
                 CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
                               'Alters + ego (TC)', 'Alters only (TC)',
                               'Alters + ego (SC)', 'Alters only (SC)']
+                if threshold is None:
+                    threshold = len(set(self.user_stats_all['Included Rank'].tolist()))
 
             else:
                 CCE = pd.melt(self.user_stats, id_vars=['Included Rank'],
@@ -549,16 +557,17 @@ class MeetupStrategy(object):
                               var_name='CCE')
                 baseline = self.ego_stats['Pi'].mean()
                 CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
+                if threshold is None:
+                    threshold = len(set(self.user_stats['Included Rank'].tolist()))
 
         else:
             raise ValueError('Only available for entropy and predictability')
 
         sns.pointplot(x="Included Rank", y="value", hue='CCE',
-                      data=CCE[CCE['Included Rank'] < threshold],
+                      data=CCE[CCE['Included Rank'] <= threshold],
                       ci=95, join=False, ax=ax)
         ax.axhline(y=baseline, color='black', linestyle='--', label='Ego')
         leg_handles = ax.get_legend_handles_labels()[0]
-        ax.legend(leg_handles, CCE_legend)
 
         if interval is None:
             interval = round(threshold / 20)
@@ -568,8 +577,14 @@ class MeetupStrategy(object):
         if name is 'predictability':
             vals = ax.get_yticks()
             ax.set_yticklabels(['{:,.2%}'.format(x) for x in vals])
+            ax.legend(leg_handles, CCE_legend)
             ax.set(xlabel='Number of included alters', ylabel='Predictability')
         elif name is 'entropy':
+            ax.legend(leg_handles, CCE_legend, loc='upper left', bbox_to_anchor=(1.04, 1))
             ax.set(xlabel='Number of included alters', ylabel='Cumulative Cross Entropy')
 
         plt.show()
+
+        if figsave:
+            title = name + '-point.' + format
+            fig.savefig(title, bbox_inches='tight')
