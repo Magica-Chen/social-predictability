@@ -45,7 +45,7 @@ class Meetup(object):
         # since we only needs userid, placieid and datetime in our computation,
         # so these attributes are required.
         self.rdata = pd.read_csv(path)
-        self.pdata = self.raw_data.dropna(subset=["placeid", 'userid', 'datetime'])
+        self.pdata = self.rdata.dropna(subset=["placeid", 'userid', 'datetime'])
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
 
@@ -88,7 +88,7 @@ class Meetup(object):
         :return: a dictionary, indexed by userid
         """
         placeidT = {ego: self.pdata[self.pdata['userid'] == ego].set_index('datetime').sort_index()[['placeid']]
-                         for ego in self.userlist}
+                    for ego in self.userlist}
         return placeidT
 
 
@@ -114,7 +114,7 @@ class MeetupStrategy(Meetup):
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
         """
-        super(Meetup, self).__init__(path)
+        super(MeetupStrategy, self).__init__(path)
         if user_meetup is None:
             self.user_meetup = self.concat_meetup()
         else:
