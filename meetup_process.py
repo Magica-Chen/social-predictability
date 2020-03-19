@@ -32,30 +32,99 @@ def getPredictability(N, S, e=100):
 SEED = 2020  # set random seed for our random function
 
 
-class MeetupStrategy(object):
+class Meetup(object):
     """
-    Create a Meetup Strategy class to include all the computation
+    Create a Meetup class to extract useful information from raw csv dataset
     """
 
-    def __init__(self, userlist, user_meetup, placeidT, epsilon=2,
+    def __init__(self, path):
+        """
+        :param path: string, the location of csv dataset
+        """
+        # rdata means raw dataset and pdata means processed dataset
+        # since we only needs userid, placieid and datetime in our computation,
+        # so these attributes are required.
+        self.rdata = pd.read_csv(path)
+        self.pdata = self.raw_data.dropna(subset=["placeid", 'userid', 'datetime'])
+        # all the following computations are based on processed data
+        self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
+
+    def find_meetup(self, ego):
+        """ Find all the meetups for ego
+        :param ego: string, ego's userid
+        :return: dataframe, filled with meetup information
+        """
+        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetime']]
+        df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetime']]
+
+        """ Here meetup means two users appear in the same placeid at the same time, so we merge two 
+        dataframes, keep on placeid and datatime, if they meet, it will be complete row record, 
+        otherwise, the record should have NaN. Therefore, we remove all the records with NaN and we
+        can have all the meetup information.
+        """
+        meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetime']) \
+            .dropna()[['userid_x',
+                       'placeid',
+                       'userid_y']].groupby(['userid_x', 'userid_y'])['placeid'] \
+            .count().reset_index(name='count').sort_values('count', ascending=False)
+
+        # compute the percentage
+        meetup[['percent']] = meetup[['count']] / meetup['count'].sum()
+
+        return meetup
+
+    def concat_meetup(self):
+        """ concat the meetups for the users
+        :return: merged dataframe with all the meetup information
+        """
+        meetup_list = [self.find_meetup(ego) for ego in self.userlist]
+        user_meetup = pd.concat(meetup_list, sort=False)
+        user_meetup = user_meetup.rename(columns={'count': 'meetup'})
+
+        return user_meetup
+
+    def temporal_placeid(self):
+        """ Extract the time-ordered placeid sequence
+        :return: a dictionary, indexed by userid
+        """
+        placeidT = {ego: self.pdata[self.pdata['userid'] == ego].set_index('datetime').sort_index()[['placeid']]
+                         for ego in self.userlist}
+        return placeidT
+
+
+class MeetupStrategy(Meetup):
+    """
+    Create a Meetup Strategy class based on Meetup class to include all the computation
+    """
+
+    def __init__(self, path, epsilon=2,
+                 user_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
                  sr_user_stats=None, sr_ego_stats=None,
                  user_stats_all=None, ego_stats_all=None):
-        """
-        MeetupStrategy needs to have several important inputs,
-        userlist: list, all userid
-        user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
-        placeidT: dict, include all the users' temporal placeid, keys are the userids
-        epsilon: int, shortest length we considered in our computation
-        user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
-        ego_stats: DataFrame, cols = ['userid_x', other statas]
+        """ MeetupStrategy needs to have several important inputs
+        Arg:
+            user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
+            placeidT: dict, include all the users' temporal placeid, keys are the userids
+            epsilon: int, shortest length we considered in our computation
+            user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
+            ego_stats: DataFrame, cols = ['userid_x', other statas]
 
-        The top three inputs can be replaced as the whole dataset, but it will cost more time any time call the calss
+        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
+        in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
         """
-        self.userlist = userlist
-        self.user_meetup = user_meetup
-        self.placeidT = placeidT
+        super(Meetup, self).__init__(path)
+        if user_meetup is None:
+            self.user_meetup = self.concat_meetup()
+        else:
+            self.user_meetup = user_meetup
+
+        if placeidT is None:
+            self.placeidT = self.temporal_placeid()
+        else:
+            self.placeidT = placeidT
+
         self.epsilon = epsilon
         self.user_stats = user_stats
         self.ego_stats = ego_stats
@@ -69,7 +138,7 @@ class MeetupStrategy(object):
     def _extract_info(self, user):
         """ Protect method: extract temporal-spatial information for each user
         Arg:
-            user: a string, a userid
+            user: string, a userid
 
         Return:
             user_time: datetime, user's timestamps
