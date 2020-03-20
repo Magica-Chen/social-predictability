@@ -30,7 +30,11 @@ class Meetup(object):
         # since we only needs userid, placieid and datetime in our computation,
         # so these attributes are required.
         self.rdata = pd.read_csv(path)
-        self.pdata = self.rdata.dropna(subset=["placeid", 'userid', 'datetime'])
+        pdata = self.rdata.dropna(subset=["placeid", 'userid', 'datetime'])[[
+            'userid', 'placeid', 'datetime']]
+        # for computation, ignore minutes and seconds
+        pdata['datetime'] = pd.to_datetime(pdata['datetime']).dt.floor('H')
+        self.pdata = pdata
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
 
@@ -58,7 +62,7 @@ class Meetup(object):
 
         return meetup
 
-    def concat_meetup(self):
+    def all_meetup(self):
         """ concat the meetups for the users
         :return: merged dataframe with all the meetup information
         """
@@ -101,7 +105,7 @@ class MeetupStrategy(Meetup):
         """
         super(MeetupStrategy, self).__init__(path)
         if user_meetup is None:
-            self.user_meetup = self.concat_meetup()
+            self.user_meetup = self.all_meetup()
         else:
             self.user_meetup = user_meetup
 
