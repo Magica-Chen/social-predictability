@@ -76,7 +76,8 @@ class Meetup(object):
         """ Extract the time-ordered placeid sequence
         :return: a dictionary, indexed by userid
         """
-        placeidT = {ego: self.pdata[self.pdata['userid'] == ego].set_index('datetime').sort_index()[['placeid']]
+        placeidT = {ego: self.pdata[self.pdata['userid'] == ego
+                                    ].set_index('datetime').sort_index()[['placeid']]
                     for ego in self.userlist}
         return placeidT
 
@@ -485,7 +486,9 @@ class MeetupStrategy(Meetup):
                                                                  'userid_y']
                                          ).drop(columns=['userid_y']).reset_index(drop=True)
             right = self.sr_user_stats.drop(columns=['userid_y']).reset_index(drop=True)
-            self.user_stats_all = left.merge(right, left_index=True, right_index=True)
+            all_merge = left.merge(right, left_index=True, right_index=True).drop(columns=['userid_x_y'])
+
+            self.user_stats_all = all_merge.rename(columns={'userid_x_x': 'userid'})
 
             if filesave:
                 self.user_stats_all.to_csv('user-meetup-info-all.csv', index=False)
