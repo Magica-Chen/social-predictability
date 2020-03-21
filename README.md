@@ -131,7 +131,7 @@ GoMeet.num_point_plot('predictability', threshold=400, interval=None, l=15, w=6,
 
 This code can also be used to in many other cases, as long as you modify your raw dataset to have `userid`, `datetime`, `placeid`. 
 
-For example, there are many stocks, AAPL, MSFT, FB, we can have their historical price information (for discrete case, just consider trend, up, draw, down for each day) as time series and we guess if you know MSFT and FB’s historical price time series, we can improve our predictability for AAPL.  To test whether, adding MSFT and FB’s trend series can improve the predictability limit of AAPL, we can just import the raw dataset, change the trend series as `placeid`, set `userid` as the attribute name of the stock, keep the time attribute as `datetie`, and then this code can help you complete. Oh, just enjoy it!
+For example, there are many stocks, AAPL, MSFT, FB, we can have their historical price information (for discrete case, just consider trend, up, draw, down for each day) as time series and we guess if you know MSFT and FB’s historical price time series, we can improve our predictability for AAPL.  To test whether, adding MSFT and FB’s trend series can improve the predictability limit of AAPL, we can just import the raw dataset, change the trend series as `placeid`, set `userid` as the attribute name of the stock, keep the time attribute as `datetie`, and then this code can help you complete. Let’s enjoy it!
 
 
 
