@@ -10,7 +10,7 @@ The code was tested on Python 3.7. It contains two main classes, **Meetup** and 
 
 ## Installation
 
-There is no need to install it, just add it at the beginning of your code.
+There is no need to install it, just import the function (meetup_strategy.py) at the beginning of your code.
 
 
 
