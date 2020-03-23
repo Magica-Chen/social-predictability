@@ -455,7 +455,7 @@ class MeetupStrategy(Meetup):
                                      )
             self.tr_ego_stats = df_ego.merge(df_alters_tr, on='userid_x')
             if filesave:
-                self.tr_ego_stats.to_csv('user-ego-info_tr.csv', index=False)
+                self.tr_ego_stats.to_csv('user-ego-info-tr.csv', index=False)
 
         if self.sr_user_stats is not None:
             df_alters_sr = pd.concat([self.sr_user_stats[self.sr_user_stats['userid_x'] == ego].
@@ -469,7 +469,7 @@ class MeetupStrategy(Meetup):
                                      )
             self.sr_ego_stats = df_ego.merge(df_alters_sr, on='userid_x')
             if filesave:
-                self.sr_ego_stats.to_csv('user-ego-info_sr.csv', index=False)
+                self.sr_ego_stats.to_csv('user-ego-info-sr.csv', index=False)
 
         return self.ego_stats, self.tr_ego_stats, self.sr_ego_stats
 
