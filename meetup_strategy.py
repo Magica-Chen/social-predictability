@@ -422,7 +422,7 @@ class MeetupStrategy(Meetup):
         ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
         Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon)
                   for i in range(N)]
-        ego_log2 = list(length_ego_uni)
+        ego_log2 = np.log2(list(length_ego_uni))
         df_ego = pd.DataFrame(data={'userid_x': self.userlist[start:end],
                                     'ego_info': ego_log2,
                                     'LZ_entropy': ego_LZ_entropy,
