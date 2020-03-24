@@ -556,6 +556,35 @@ class MeetupStrategy(Meetup):
         ax.legend()
         plt.show()
 
+    def paper_hist(self, l=15, w=6, n_bins=100, mode='talk'):
+        """ Histogram plot for entropy and predictability given by the James' paper
+        :param l: int, long
+        :param w: int, width
+        :param n_bins: int, how many bins shown in the plot
+        :param mode: string, see from seaborn, available,'talk', 'notebook',
+        'paper', 'poster'.
+        :return: None
+        """
+        LZentropy = self.ego_stats['LZ_entropy'].dropna()
+        pred = self.ego_stats['Pi'].dropna()
+        # only include the most frequent alter
+        CrossEntropy = self.user_stats[self.user_stats['Included Rank'] == 1]['CE_alter'].dropna()
+        pred_alter = self.user_stats[self.user_stats['Included Rank'] == 1]['Pi_alter'].dropna()
+
+        fig, [ax1, ax2] = plt.subplots(1, 2, figsize=(l, w))
+        sns.set_context(mode)
+        sns.distplot(LZentropy, label='Entropy', bins=n_bins, ax=ax1, kde=False)
+        sns.distplot(CrossEntropy, label='Cross Entropy', bins=n_bins, ax=ax1, kde=False)
+        ax1.set(xlabel='Entropy (bits)', ylabel='Count')
+        ax1.legend(loc='best')
+
+        sns.distplot(pred, label='Entropy', bins=n_bins, ax=ax2, kde=False)
+        sns.distplot(pred_alter, label='Cross Entropy', bins=n_bins, ax=ax2, kde=False)
+        ax2.set(xlabel='Predictability', ylabel='Counts')
+        ax2.legend(loc='best')
+        plt.tight_layout()
+        plt.show()
+
     def num_point_plot(self, name, threshold=None, interval=None, l=15, w=6, mode='talk',
                        control=False, figsave=False, format='pdf'):
         """ number of included alters vs entropy or predictability
