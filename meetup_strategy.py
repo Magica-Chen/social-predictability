@@ -556,13 +556,16 @@ class MeetupStrategy(Meetup):
         ax.legend()
         plt.show()
 
-    def paper_hist(self, l=15, w=6, n_bins=100, mode='talk'):
+    def paper_hist(self, l=15, w=6, n_bins=100, mode='talk',
+                   figsave=False, format='eps'):
         """ Histogram plot for entropy and predictability given by the James' paper
         :param l: int, long
         :param w: int, width
         :param n_bins: int, how many bins shown in the plot
         :param mode: string, see from seaborn, available,'talk', 'notebook',
         'paper', 'poster'.
+        :param figsave: whether the figure will be saved
+        :param format: png, eps, pdf, and so on.
         :return: None
         """
         LZentropy = self.ego_stats['LZ_entropy'].dropna()
@@ -585,8 +588,56 @@ class MeetupStrategy(Meetup):
         plt.tight_layout()
         plt.show()
 
+        if figsave:
+            title = 'Hist entropy and Pi.' + format
+            fig.savefig(title, bbox_inches='tight')
+
+    def paper_interaction(self, threshold=None, interval=None, l=12, w=8, n_bins=200, mode='talk',
+                          figsave=False, format='eps'):
+        """ Number of meetupers of alter vs predictability
+        :param l: int, long
+        :param w: int, width
+        :param n_bins: int, how many bins shown in the plot
+        :param mode: string, see from seaborn, available,'talk', 'notebook',
+        'paper', 'poster'.
+        :param threshold: int, the largest number of alters included
+        :param interval: int, the interval shown in axis
+        :param figsave: whether the figure will be saved
+        :param format: png, eps, pdf, and so on.
+
+        :return: None
+        """
+        N_meetupers = self.user_stats.groupby('userid_x')['userid_y'].count().reset_index(name='count')
+        iterim = self.user_stats.merge(N_meetupers, left_on='userid_y', right_on='userid_x', how='left')
+        if threshold is None:
+            threshold = max(iterim['count'])
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [2, 1]}, sharex=True,
+                                       figsize=(l, w))
+        sns.set_context(mode)
+        sns.pointplot(x="count", y="Pi_alter", data=iterim[iterim['count'] <= threshold],
+                      ci=95, join=False, ax=ax1)
+        if interval is None:
+            interval = round(threshold / 20)
+        ax1.xaxis.set_major_locator(ticker.MultipleLocator(interval))
+        ax1.xaxis.set_major_formatter(ticker.ScalarFormatter())
+        vals = ax1.get_yticks()
+        ax1.set_yticklabels(['{:,.2%}'.format(x) for x in vals])
+        ax1.set(ylabel='Predictability', xlabel='')
+        ax1.set_rasterized(True)
+
+        sns.distplot(iterim[iterim['count'] <= threshold]['count'], bins=n_bins, kde=False, ax=ax2)
+        ax2.set(xlabel='Number of meetupers of alter', ylabel='Count')
+
+        fig.tight_layout()
+        plt.show()
+
+        if figsave:
+            title = 'Meetupers of Alter vs Pi.' + format
+            fig.savefig(title, bbox_inches='tight')
+
     def num_point_plot(self, name, threshold=None, interval=None, l=15, w=6, mode='talk',
-                       control=False, figsave=False, format='pdf'):
+                       control=False, figsave=False, format='eps'):
         """ number of included alters vs entropy or predictability
         :param name: string, currently only accept 'entropy' or 'predictability'
         :param threshold: int, the largest number of alters included
