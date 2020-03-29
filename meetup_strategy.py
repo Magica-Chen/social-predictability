@@ -81,8 +81,8 @@ class Meetup(object):
             meetupers_count = self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
             self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
             self.user_meetup = self.user_meetup[self.user_meetup['userid_x'].isin(self.egolist)]
-            self.alterlist = list(set(self.user_meetup['userid_y'].tolist()))
-            self.userlist = list(set(self.egolist + self.alterlist))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
             self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
             return self.user_meetup
 
@@ -127,9 +127,9 @@ class MeetupStrategy(Meetup):
             self.user_meetup = user_meetup
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
             # alterlist, userlist and pdata.
-            self.egolist = list(set(self.user_meetup['userid_x'].tolist()))
-            self.alterlist = list(set(self.user_meetup['userid_y'].tolist()))
-            self.userlist = list(set(self.egolist + self.alterlist))
+            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
             self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
