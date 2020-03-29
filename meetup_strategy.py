@@ -22,21 +22,22 @@ class Meetup(object):
     Create a Meetup class to extract useful information from raw csv dataset
     """
 
-    def __init__(self, path):
+    def __init__(self, path, mins_records=2):
         """
+        :arg path: path of source file
+        :arg mins_records: the required min number of records for each user
         :param path: string, the location of csv dataset
         """
         # rdata means raw dataset and pdata means processed dataset
         # since we only needs userid, placieid and datetime in our computation,
         # so these attributes are required.
         self.rdata = pd.read_csv(path)
-        pdata = self.rdata.dropna(subset=["placeid", 'userid', 'datetime'])[[
-            'userid', 'placeid', 'datetime']]
-        # for computation, ignore minutes and seconds
-        pdata['datetime'] = pd.to_datetime(pdata['datetime']).dt.floor('H')
-        self.pdata = pdata
+        self.pdata = pre_processing(self.rdata, min_records=mins_records)
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
+        self.user_meetup = None
+        self.egolist = None
+        self.alterlist = None
 
     def find_meetup(self, ego):
         """ Find all the meetups for ego
@@ -68,17 +69,30 @@ class Meetup(object):
         """
         meetup_list = [self.find_meetup(ego) for ego in self.userlist]
         user_meetup = pd.concat(meetup_list, sort=False)
-        user_meetup = user_meetup.rename(columns={'count': 'meetup'})
+        self.user_meetup = user_meetup.rename(columns={'count': 'meetup'})
 
-        return user_meetup
+        return self.user_meetup
+
+    def meetup_filter(self, n_meetupers=100):
+        if self.user_meetup is None:
+            self.all_meetup()
+            return self.meetup_filter(n_meetupers=n_meetupers)
+        else:
+            meetupers_count = self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
+            self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
+            self.user_meetup = self.user_meetup[self.user_meetup['userid_x'].isin(self.egolist)]
+            self.alterlist = list(set(self.user_meetup['userid_y'].tolist()))
+            self.userlist = list(set(self.egolist + self.alterlist))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+            return self.user_meetup
 
     def temporal_placeid(self):
         """ Extract the time-ordered placeid sequence
         :return: a dictionary, indexed by userid
         """
-        placeidT = {ego: self.pdata[self.pdata['userid'] == ego
+        placeidT = {user: self.pdata[self.pdata['userid'] == user
                                     ].set_index('datetime').sort_index()[['placeid']]
-                    for ego in self.userlist}
+                    for user in self.userlist}
         return placeidT
 
 
@@ -87,7 +101,7 @@ class MeetupStrategy(Meetup):
     Create a Meetup Strategy class based on Meetup class to include all the computation
     """
 
-    def __init__(self, path, epsilon=2,
+    def __init__(self, path, mins_records=2, n_meetupers=100,
                  user_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
@@ -97,25 +111,33 @@ class MeetupStrategy(Meetup):
         Arg:
             user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
-            epsilon: int, shortest length we considered in our computation
             user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
             ego_stats: DataFrame, cols = ['userid_x', other statas]
 
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
         """
-        super(MeetupStrategy, self).__init__(path)
+        super(MeetupStrategy, self).__init__(path, mins_records)
         if user_meetup is None:
-            self.user_meetup = self.all_meetup()
+            if n_meetupers is None:
+                self.user_meetup = self.all_meetup()
+            else:
+                self.user_meetup = self.meetup_filter(n_meetupers)
         else:
             self.user_meetup = user_meetup
+            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
+            # alterlist, userlist and pdata.
+            self.egolist = list(set(self.user_meetup['userid_x'].tolist()))
+            self.alterlist = list(set(self.user_meetup['userid_y'].tolist()))
+            self.userlist = list(set(self.egolist + self.alterlist))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
             self.placeidT = self.temporal_placeid()
         else:
             self.placeidT = placeidT
 
-        self.epsilon = epsilon
+        self.epsilon = mins_records
         self.user_stats = user_stats
         self.ego_stats = ego_stats
         self.tr_user_stats = tr_user_stats
@@ -729,6 +751,23 @@ class MeetupStrategy(Meetup):
         if figsave:
             title = name + '-point.' + format
             fig.savefig(title, bbox_inches='tight')
+
+
+def pre_processing(df_raw, min_records=200, filesave=False):
+    df_wp = df_raw.dropna(subset=['userid', 'placeid', 'datetime'])[[
+        'userid', 'placeid', 'datetime']]
+
+    df = df_wp.groupby('userid')['datetime'].count().reset_index(name='count')
+    mask1 = df['count'].values >= min_records
+    user = pd.DataFrame(df.values[mask1], df.index[mask1], df.columns)['userid'].tolist()
+    # for computation, ignore minutes and seconds
+    df_wp['datetime'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
+    df_processed = df_wp[df_wp['userid'].isin(user)]
+    if filesave:
+        name = 'data/weeplace_checkins_' + str(min_records) +'UPD.csv'
+        df_processed.to_csv(name, index=False)
+
+    return df_processed
 
 
 # As required by algorithm, N should be large, we set e as the threshold of N.
