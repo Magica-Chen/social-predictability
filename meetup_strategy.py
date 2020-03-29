@@ -22,17 +22,20 @@ class Meetup(object):
     Create a Meetup class to extract useful information from raw csv dataset
     """
 
-    def __init__(self, path, mins_records=2):
+    def __init__(self, path, mins_records=2, geoid=False, resolution=None):
         """
         :arg path: path of source file
         :arg mins_records: the required min number of records for each user
+        :arg geoid: whether use geo-coordinates id than placeid
+        :arg resolution: if geoid is true, what resolution will be used
         :param path: string, the location of csv dataset
         """
         # rdata means raw dataset and pdata means processed dataset
         # since we only needs userid, placieid and datetime in our computation,
         # so these attributes are required.
         self.rdata = pd.read_csv(path)
-        self.pdata = pre_processing(self.rdata, min_records=mins_records)
+        self.pdata = pre_processing(self.rdata, min_records=mins_records,
+                                    geoid=geoid, resolution=resolution)
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
         self.user_meetup = None
@@ -101,7 +104,8 @@ class MeetupStrategy(Meetup):
     Create a Meetup Strategy class based on Meetup class to include all the computation
     """
 
-    def __init__(self, path, mins_records=2, n_meetupers=100,
+    def __init__(self, path, mins_records=2, geoid=False, resolution=None,
+                 n_meetupers=100,
                  user_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
@@ -109,6 +113,8 @@ class MeetupStrategy(Meetup):
                  user_stats_all=None, ego_stats_all=None):
         """ MeetupStrategy needs to have several important inputs
         Arg:
+            path, mins_records, geoid, resolution are from the mother class Meetup
+            n_meetupers: int, the number of meetupers we set
             user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
             user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
@@ -117,7 +123,7 @@ class MeetupStrategy(Meetup):
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
         """
-        super(MeetupStrategy, self).__init__(path, mins_records)
+        super(MeetupStrategy, self).__init__(path, mins_records, geoid, resolution)
         if user_meetup is None:
             if n_meetupers is None:
                 self.user_meetup = self.all_meetup()
@@ -753,9 +759,23 @@ class MeetupStrategy(Meetup):
             fig.savefig(title, bbox_inches='tight')
 
 
-def pre_processing(df_raw, min_records=200, filesave=False):
+""" Global function below here """
+
+
+def geo2id(df, resolution=None, lat='lat', lon='lon'):
+    if resolution is not None:
+        df = pd.DataFrame(df)
+        df['lat'] = df['lat'].map(lambda x: round(x, resolution))
+        df['lon'] = df['lon'].map(lambda x: round(x, resolution))
+    df_new = df.groupby([lat, lon]).size().reset_index(name='count')[[lat, lon]]
+    df_new['geo-id'] = df_new.index
+    df_new['geo-id'] = df_new['geo-id'].map(lambda x: '(' + str(x) + ')')
+    return df.merge(df_new, how='left', on=[lat, lon])
+
+
+def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolution=4):
     df_wp = df_raw.dropna(subset=['userid', 'placeid', 'datetime'])[[
-        'userid', 'placeid', 'datetime']]
+        'userid', 'placeid', 'datetime', 'lat', 'lon']]
 
     df = df_wp.groupby('userid')['datetime'].count().reset_index(name='count')
     mask1 = df['count'].values >= min_records
@@ -763,8 +783,19 @@ def pre_processing(df_raw, min_records=200, filesave=False):
     # for computation, ignore minutes and seconds
     df_wp['datetime'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
     df_processed = df_wp[df_wp['userid'].isin(user)]
+
+    if geoid:
+        df_processed = geo2id(df_processed, resolution)
+        df_processed = df_processed.drop('placeid', axis=1)
+        df_processed = df_processed.rename(columns={'geo-id': 'placeid'})
+
+    df_processed = df_processed.drop(['lat', 'lon'], axis=1)
+
     if filesave:
-        name = 'data/weeplace_checkins_' + str(min_records) +'UPD.csv'
+        if geoid:
+            name = 'data/weeplace_checkins_' + str(min_records) + 'Geo-UPD' + str(resolution) + '.csv'
+        else:
+            name = 'data/weeplace_checkins_' + str(min_records) + 'UPD.csv'
         df_processed.to_csv(name, index=False)
 
     return df_processed
