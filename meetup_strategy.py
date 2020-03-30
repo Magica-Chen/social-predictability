@@ -56,10 +56,9 @@ class Meetup(object):
         can have all the meetup information.
         """
         meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetime']) \
-            .dropna()[['userid_x',
-                       'placeid',
-                       'userid_y']].groupby(['userid_x', 'userid_y'])['placeid'] \
-            .count().reset_index(name='count').sort_values('count', ascending=False)
+            .dropna()[['userid_x', 'placeid','datetime', 'userid_y']]\
+            .drop_duplicates().groupby(['userid_x', 'userid_y']).size()\
+            .reset_index(name='count').sort_values(by=['count', 'userid_y'], ascending=[False, True])
 
         # compute the percentage
         meetup[['percent']] = meetup[['count']] / meetup['count'].sum()
