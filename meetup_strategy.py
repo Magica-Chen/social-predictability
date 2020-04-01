@@ -403,7 +403,7 @@ class MeetupStrategy(Meetup):
             user_stats, and also add to the class self oject, self.user_stats
         """
         if end is None:
-            end = len(self.userlist)
+            end = len(self.egolist)
 
         random.seed(SEED)
         meetup_list = [self._ego_meetup(ego, tempsave=filesave, egoshow=verbose,
@@ -441,7 +441,7 @@ class MeetupStrategy(Meetup):
             ego_stats, and also add to the class self oject, self.ego_stats
         """
         if end is None:
-            end = len(self.userlist)
+            end = len(self.egolist)
 
         ego_time, length_ego_uni, length_ego, ego_placeid = zip(*[self._extract_info(ego)
                                                                   for ego in self.egolist[start:end]])
@@ -450,7 +450,7 @@ class MeetupStrategy(Meetup):
         Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon)
                   for i in range(N)]
         ego_log2 = np.log2(list(length_ego_uni))
-        df_ego = pd.DataFrame(data={'userid_x': self.userlist[start:end],
+        df_ego = pd.DataFrame(data={'userid_x': self.egolist[start:end],
                                     'ego_info': ego_log2,
                                     'LZ_entropy': ego_LZ_entropy,
                                     'Pi': Pi_ego
