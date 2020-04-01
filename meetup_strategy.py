@@ -47,16 +47,16 @@ class Meetup(object):
         :param ego: string, ego's userid
         :return: dataframe, filled with meetup information
         """
-        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetime']]
-        df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetime']]
+        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
+        df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetimeH']]
 
         """ Here meetup means two users appear in the same placeid at the same time, so we merge two 
         dataframes, keep on placeid and datatime, if they meet, it will be complete row record, 
         otherwise, the record should have NaN. Therefore, we remove all the records with NaN and we
         can have all the meetup information.
         """
-        meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetime']) \
-            .dropna()[['userid_x', 'placeid','datetime', 'userid_y']]\
+        meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetimeH']) \
+            .dropna()[['userid_x', 'placeid', 'datetimeH', 'userid_y']]\
             .drop_duplicates().groupby(['userid_x', 'userid_y']).size()\
             .reset_index(name='count').sort_values(by=['count', 'userid_y'], ascending=[False, True])
 
@@ -797,7 +797,7 @@ def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolut
     mask1 = df['count'].values >= min_records
     user = pd.DataFrame(df.values[mask1], df.index[mask1], df.columns)['userid'].tolist()
     # for computation, ignore minutes and seconds
-    df_wp['datetime'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
+    df_wp['datetimeH'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
     df_processed = df_wp[df_wp['userid'].isin(user)]
 
     if geoid:
