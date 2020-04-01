@@ -39,6 +39,7 @@ class Meetup(object):
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
         self.user_meetup = None
+        self.total_meetup = None
         self.egolist = None
         self.alterlist = None
 
@@ -71,18 +72,23 @@ class Meetup(object):
         """
         meetup_list = [self.find_meetup(user) for user in self.userlist]
         user_meetup = pd.concat(meetup_list, sort=False)
-        self.user_meetup = user_meetup.rename(columns={'count': 'meetup'})
+        self.total_meetup = user_meetup.rename(columns={'count': 'meetup'})
 
-        return self.user_meetup
+        return self.total_meetup
 
     def meetup_filter(self, n_meetupers=100):
-        if self.user_meetup is None:
+        """
+        Standing on the total_meetup, only choose some egos who have n_meetupers
+        :param n_meetupers: the number of meetupers the ego has
+        :return: filtered user_meetup
+        """
+        if self.total_meetup is None:
             self.all_meetup()
             return self.meetup_filter(n_meetupers=n_meetupers)
         else:
-            meetupers_count = self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
+            meetupers_count = self.total_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
             self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
-            self.user_meetup = self.user_meetup[self.user_meetup['userid_x'].isin(self.egolist)]
+            self.user_meetup = self.total_meetup[self.total_meetup['userid_x'].isin(self.egolist)]
             self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
             self.userlist = sorted(list(set(self.egolist + self.alterlist)))
             self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
