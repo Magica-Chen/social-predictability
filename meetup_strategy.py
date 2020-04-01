@@ -88,10 +88,13 @@ class Meetup(object):
             self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
             return self.user_meetup
 
-    def temporal_placeid(self):
+    def temporal_placeid(self, userlist=None):
         """ Extract the time-ordered placeid sequence
         :return: a dictionary, indexed by userid
         """
+        if userlist is not None:
+            self.userlist = userlist
+            
         placeidT = {user: self.pdata[self.pdata['userid'] == user
                                     ].set_index('datetime').sort_index()[['placeid']]
                     for user in self.userlist}
@@ -104,7 +107,7 @@ class MeetupStrategy(Meetup):
     """
 
     def __init__(self, path, mins_records=2, geoid=False, resolution=None,
-                 n_meetupers=100,
+                 n_meetupers=100, epsilon=2,
                  user_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
@@ -142,7 +145,7 @@ class MeetupStrategy(Meetup):
         else:
             self.placeidT = placeidT
 
-        self.epsilon = mins_records
+        self.epsilon = epsilon
         self.user_stats = user_stats
         self.ego_stats = ego_stats
         self.tr_user_stats = tr_user_stats
@@ -797,6 +800,7 @@ def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolut
     mask1 = df['count'].values >= min_records
     user = pd.DataFrame(df.values[mask1], df.index[mask1], df.columns)['userid'].tolist()
     # for computation, ignore minutes and seconds
+    df_wp['datetime'] = pd.to_datetime(df_wp['datetime'])
     df_wp['datetimeH'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
     df_processed = df_wp[df_wp['userid'].isin(user)]
 
