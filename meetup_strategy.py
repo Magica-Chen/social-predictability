@@ -69,7 +69,7 @@ class Meetup(object):
         """ concat the meetups for the users
         :return: merged dataframe with all the meetup information
         """
-        meetup_list = [self.find_meetup(ego) for ego in self.userlist]
+        meetup_list = [self.find_meetup(user) for user in self.userlist]
         user_meetup = pd.concat(meetup_list, sort=False)
         self.user_meetup = user_meetup.rename(columns={'count': 'meetup'})
 
@@ -409,7 +409,7 @@ class MeetupStrategy(Meetup):
         meetup_list = [self._ego_meetup(ego, tempsave=filesave, egoshow=verbose,
                                         temp_shuffle=temp_shuffle,
                                         social_shuffle=social_shuffle)
-                       for ego in self.userlist[start:end]]
+                       for ego in self.egolist[start:end]]
         user_stats = pd.concat(meetup_list, sort=False)
 
         if temp_shuffle:
@@ -444,7 +444,7 @@ class MeetupStrategy(Meetup):
             end = len(self.userlist)
 
         ego_time, length_ego_uni, length_ego, ego_placeid = zip(*[self._extract_info(ego)
-                                                                  for ego in self.userlist[start:end]])
+                                                                  for ego in self.egolist[start:end]])
         N = end - start
         ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
         Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon)
@@ -463,7 +463,7 @@ class MeetupStrategy(Meetup):
                                            'CCE_ego_alters',
                                            'Pi_alters',
                                            'Pi_ego_alters'
-                                           ]] for ego in self.userlist[start:end]
+                                           ]] for ego in self.egolist[start:end]
                                    ]
                                   )
             self.ego_stats = df_ego.merge(df_alters, on='userid_x')
@@ -477,7 +477,7 @@ class MeetupStrategy(Meetup):
                                               'CCE_ego_alters_tr',
                                               'Pi_alters_tr',
                                               'Pi_ego_alters_tr'
-                                              ]] for ego in self.userlist[start:end]
+                                              ]] for ego in self.egolist[start:end]
                                       ]
                                      )
             self.tr_ego_stats = df_ego.merge(df_alters_tr, on='userid_x')
@@ -491,7 +491,7 @@ class MeetupStrategy(Meetup):
                                               'CCE_ego_alters_sr',
                                               'Pi_alters_sr',
                                               'Pi_ego_alters_sr'
-                                              ]] for ego in self.userlist[start:end]
+                                              ]] for ego in self.egolist[start:end]
                                       ]
                                      )
             self.sr_ego_stats = df_ego.merge(df_alters_sr, on='userid_x')
