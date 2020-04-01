@@ -251,6 +251,8 @@ class MeetupStrategy(Meetup):
             alter related information
         """
         length_ego = len(ego_placeid)
+        # length of unique placeid
+        length_ego_uni = len(set(ego_placeid))
         alterid = alters.index(alter)
 
         # included rank is j+1
@@ -274,7 +276,7 @@ class MeetupStrategy(Meetup):
         # compute cross entropy with only this alter
         """ For alter"""
         CE_alter = LZ_cross_entropy(alter_placeid, ego_placeid, PTs, e=self.epsilon)
-        Pi_alter = getPredictability(length_ego, CE_alter, e=self.epsilon)
+        Pi_alter = getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
 
         """ For all above alters """
         # Obtain the basic information to extend L, wb, length_alters
@@ -293,7 +295,7 @@ class MeetupStrategy(Meetup):
         ave_length = self._ave(alters_length, wb_length)
         # CCE for all above alters
         CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
-        Pi_alters = getPredictability(length_ego, CCE_alters, e=self.epsilon)
+        Pi_alters = getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
 
         """For only this alter + ego"""
         # for only this alter and ego
@@ -302,7 +304,7 @@ class MeetupStrategy(Meetup):
         bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
         ave_length = self._ave(bi_length, bi_weight)
         CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
-        Pi_ego_alter = getPredictability(length_ego, CCE_ego_alter, e=self.epsilon)
+        Pi_ego_alter = getPredictability(length_ego_uni, CCE_ego_alter, e=self.epsilon)
 
         """For all above alters + ego"""
         # for ego+alters: top above all alters + ego
@@ -311,7 +313,7 @@ class MeetupStrategy(Meetup):
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
         ave_length = self._ave(alters_length, ego_alters_weight)
         CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
-        Pi_ego_alters = getPredictability(length_ego, CCE_ego_alters, e=self.epsilon)
+        Pi_ego_alters = getPredictability(length_ego_uni, CCE_ego_alters, e=self.epsilon)
 
         return [alter, rank, wb[alterid], alter_log2,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
@@ -447,7 +449,7 @@ class MeetupStrategy(Meetup):
                                                                   for ego in self.egolist[start:end]])
         N = end - start
         ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
-        Pi_ego = [getPredictability(length_ego[i], ego_LZ_entropy[i], e=self.epsilon)
+        Pi_ego = [getPredictability(length_ego_uni[i], ego_LZ_entropy[i], e=self.epsilon)
                   for i in range(N)]
         ego_log2 = np.log2(list(length_ego_uni))
         df_ego = pd.DataFrame(data={'userid_x': self.egolist[start:end],
