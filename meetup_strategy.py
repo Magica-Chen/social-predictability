@@ -289,13 +289,11 @@ class MeetupStrategy(Meetup):
         ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
         """ego only"""
-        alters_L_ego, wb_length_ego, alters_length_ego = self._ego_alter_basic(ego_time_delay,
-                                                                               ego_placeid,
-                                                                               ego_L,
-                                                                               alter=ego)
-        ave_length = self._ave(alters_length_ego, wb_length_ego)
-        CE_ego, Pi_ego = self.entropy_predictability(length_ego_uni, length_ego,
-                                                     alters_L_ego, ave_length)
+        total_time = sorted(ego_time_delay + ego_time)
+        PTs = [(total_time.index(x) - ego_time_delay.index(x)) for x in ego_time_delay]
+
+        CE_ego = LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
         alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time_delay,
