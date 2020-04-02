@@ -13,6 +13,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import random
+from datetime import timedelta
 
 SEED = 2020  # set random seed for our random function
 
@@ -181,11 +182,11 @@ class MeetupStrategy(Meetup):
         return user_time, N_uniq_placeid, N_placeid, user_placeid
 
     @staticmethod
-    def cross_entropy_pair(length_ego, alters_L, ave_length):
-        """ public method: Compute cross entropy for a pair of ego and alters
+    def cumulative_cross_entropy(length_ego, alters_L, ave_length):
+        """ public method: Compute cumulative cross entropy for an ego and its alters
         Args:
-            length_ego: list, the length of the visited placedid sequence.
-            alters_L: list, cross-parsed match legnths for the alters given
+            length_ego: int, the length of the visited placedid sequence of ego.
+            alters_L: list, cross-parsed match legnths for the all alters of ego
             ave_length: float, the weighted average lengths of all the users in B
 
         Return:
@@ -242,7 +243,13 @@ class MeetupStrategy(Meetup):
             else:
                 return np.nansum(alter_length * alter_wb) / np.nansum(alter_wb)
 
-    def _cross_entropy_element(self, ego_time, ego_placeid, ego_L, alter, alters,
+    def entropy_predictability(self, length_ego_uni, length_ego, alters_L, ave_length):
+        """ Compute entropy and predictability using the definition"""
+        CCE_alters = self.cumulative_cross_entropy(length_ego, alters_L, ave_length)
+        Pi_alters = getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
+        return CCE_alters, Pi_alters
+
+    def _cross_entropy_pair(self, ego_time, ego_placeid, ego_L, alter, alters,
                                L, wb, length_alters, temp_shuffle=False):
         """ Protected method (recursive structure): compute cross entropy related to statistics
         Args:
@@ -303,31 +310,72 @@ class MeetupStrategy(Meetup):
         # average lengths
         ave_length = self._ave(alters_length, wb_length)
         # CCE for all above alters
-        CCE_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
-        Pi_alters = getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
-
+        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+                                                            alters_L, ave_length)
         """For only this alter + ego"""
         # for only this alter and ego
         ego_alter_L = [ego_L, L[alterid]]
         bi_length = np.array([length_alters[alterid], length_ego], dtype=np.float64)
         bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
         ave_length = self._ave(bi_length, bi_weight)
-        CCE_ego_alter = self.cross_entropy_pair(length_ego, ego_alter_L, ave_length)
-        Pi_ego_alter = getPredictability(length_ego_uni, CCE_ego_alter, e=self.epsilon)
-
+        CCE_ego_alter, Pi_ego_alter = self.entropy_predictability(length_ego_uni,
+                                                                  length_ego,
+                                                                  ego_alter_L,
+                                                                  ave_length)
         """For all above alters + ego"""
         # for ego+alters: top above all alters + ego
         alters_L.append(ego_L)
         alters_length.append(length_ego)
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
         ave_length = self._ave(alters_length, ego_alters_weight)
-        CCE_ego_alters = self.cross_entropy_pair(length_ego, alters_L, ave_length)
-        Pi_ego_alters = getPredictability(length_ego_uni, CCE_ego_alters, e=self.epsilon)
-
+        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+                                                                    length_ego,
+                                                                    alters_L,
+                                                                    ave_length)
         return [alter, rank, wb[alterid], alter_log2,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
+
+    # def _ego_recency_effect(self, ego, time_shift, egoshow=False):
+    #     # extraact information of ego and compute all the statistics for all egos
+    #     ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+    #     ego_time = ego_time - timedelta(hours=time_shift)
+    #
+    #     ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+    #     alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
+    #     N_alters = len(alters)
+    #
+    #     for alter in alters:
+    #         alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
+    #         alter_log2 = np.log2(length_alter_uniq)
+    #
+    #         total_time = sorted(ego_time + alter_time)
+    #         PTs = [total_time.index(x) for x in ego_time]
+    #
+    #         L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+    #                                       lambdas=True, e=self.epsilon)
+    #         wb[alterid] = self.weight(ego_L, L[alterid])
+    #         # length of alter placeid
+    #         length_alters[alterid] = length_alter
+    #
+    #     alters_L = L[:alterid + 1]
+    #     alters_length = length_alters[:alterid + 1]
+    #     wb_length = wb[:alterid + 1]
+    #     ave_length = self._ave(alters_length, wb_length)
+    #
+    #     CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+    #                                                         alters_L, ave_length)
+    #     # alters + ego
+    #     alters_L.append(ego_L)
+    #     alters_length.append(length_ego)
+    #     ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
+    #     ave_length = self._ave(alters_length, ego_alters_weight)
+    #     CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+    #                                                                 length_ego,
+    #                                                                 alters_L,
+    #                                                                 ave_length)
+    #     return [time_shift, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
 
     def _ego_meetup(self, ego, tempsave=False, egoshow=False,
                     temp_shuffle=False, social_shuffle=False):
@@ -362,7 +410,7 @@ class MeetupStrategy(Meetup):
         wb = [None] * N_alters
         length_alters = [None] * N_alters
 
-        ego_stats = [self._cross_entropy_element(ego_time, ego_placeid, ego_L, alter, alters,
+        ego_stats = [self._cross_entropy_pair(ego_time, ego_placeid, ego_L, alter, alters,
                                                  L, wb, length_alters,
                                                  temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
