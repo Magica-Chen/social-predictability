@@ -264,7 +264,7 @@ class MeetupStrategy(Meetup):
         alter_time, _, length_alter, alter_placeid = self._extract_info(alter)
 
         total_time = sorted(ego_time + alter_time)
-        PTs = [total_time.index(x) for x in ego_time]
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
         L = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                              lambdas=True, e=self.epsilon)
@@ -281,18 +281,17 @@ class MeetupStrategy(Meetup):
         """
         #
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
-        ego_time = ego_time - timedelta(hours=lag)
+        ego_time = [v - timedelta(hours=lag) for v in ego_time]
 
         ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
 
-        alters_L, wb_length, alters_length, alters_info = zip(*[self._ego_alter_basic(ego_time,
-                                                                                      ego_placeid,
-                                                                                      ego_L,
-                                                                                      alter)
-                                                                for alter in alters])
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
+                                                                                   ego_placeid,
+                                                                                   ego_L,
+                                                                                   alter)
+                                                             for alter in alters]))
         ave_length = self._ave(alters_length, wb_length)
-
         CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
                                                             alters_L, ave_length)
         # alters + ego
@@ -316,7 +315,7 @@ class MeetupStrategy(Meetup):
         :param verbose: whether display the step
         :return: DataFrame,contains all egos and all time delays
         """
-        total_recency = [self._ego_alter_lag(ego, lag, verbose) for lag in range(1, longest_time+1)
+        total_recency = [self._ego_alter_lag(ego, lag, verbose) for lag in range(1, longest_time + 1)
                          for ego in self.egolist]
 
         return pd.DataFrame(total_recency, columns=['ego', 'delay',
