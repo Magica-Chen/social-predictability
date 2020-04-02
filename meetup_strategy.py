@@ -58,8 +58,8 @@ class Meetup(object):
         can have all the meetup information.
         """
         meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetimeH']) \
-            .dropna()[['userid_x', 'placeid', 'datetimeH', 'userid_y']]\
-            .drop_duplicates().groupby(['userid_x', 'userid_y']).size()\
+            .dropna()[['userid_x', 'placeid', 'datetimeH', 'userid_y']] \
+            .drop_duplicates().groupby(['userid_x', 'userid_y']).size() \
             .reset_index(name='count').sort_values(by=['count', 'userid_y'], ascending=[False, True])
 
         # compute the percentage
@@ -101,9 +101,9 @@ class Meetup(object):
         """
         if userlist is not None:
             self.userlist = userlist
-            
+
         placeidT = {user: self.pdata[self.pdata['userid'] == user
-                                    ].set_index('datetime').sort_index()[['placeid']]
+                                     ].set_index('datetime').sort_index()[['placeid']]
                     for user in self.userlist}
         return placeidT
 
@@ -249,8 +249,83 @@ class MeetupStrategy(Meetup):
         Pi_alters = getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
         return CCE_alters, Pi_alters
 
+    def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter):
+        """
+        use ego's info and alter id, to compute the basic info for cumulative cross entropy
+        :param ego_time: time series of ego
+        :param ego_placeid: placeid series of ego
+        :param ego_L: match length of ego
+        :param alter: userid of alter
+        :return:
+            L: cross-parsed match length of ego given alter
+            wb: the number of times that matches from ego are found in alter
+            length_alter: the length of placeid sequence
+        """
+        alter_time, _, length_alter, alter_placeid = self._extract_info(alter)
+
+        total_time = sorted(ego_time + alter_time)
+        PTs = [total_time.index(x) for x in ego_time]
+
+        L = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                             lambdas=True, e=self.epsilon)
+        wb = self.weight(ego_L, L)
+        return L, wb, length_alter
+
+    def _ego_alter_lag(self, ego, lag, egoshow=False):
+        """
+        extraact information of ego and compute all the statistics
+        :param ego: userid of ego
+        :param lag: the number of hours removed from the previous
+        :param egoshow: whether print ego
+        :return: CCE and Predictability for alters only and ego+alters case
+        """
+        #
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+        ego_time = ego_time - timedelta(hours=lag)
+
+        ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
+
+        alters_L, wb_length, alters_length, alters_info = zip(*[self._ego_alter_basic(ego_time,
+                                                                                      ego_placeid,
+                                                                                      ego_L,
+                                                                                      alter)
+                                                                for alter in alters])
+        ave_length = self._ave(alters_length, wb_length)
+
+        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+                                                            alters_L, ave_length)
+        # alters + ego
+        alters_L.append(ego_L)
+        alters_length.append(length_ego)
+        ego_alters_weight = wb_length + [self.weight(ego_L)]
+        ave_length = self._ave(alters_length, ego_alters_weight)
+        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+                                                                    length_ego,
+                                                                    alters_L,
+                                                                    ave_length)
+        if egoshow:
+            print(ego)
+
+        return [ego, lag, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
+
+    def recency_effect(self, longest_time=24, verbose=False):
+        """
+        Combine all egos and all time delays as a dataframe
+        :param longest_time: the longest time delay
+        :param verbose: whether display the step
+        :return: DataFrame,contains all egos and all time delays
+        """
+        total_recency = [self._ego_alter_lag(ego, lag, verbose) for lag in range(1, longest_time+1)
+                         for ego in self.egolist]
+
+        return pd.DataFrame(total_recency, columns=['ego', 'delay',
+                                                    'CCE_alters', 'CCE_ego_alters',
+                                                    'Pi_alters', 'Pi_ego_alters']
+                            )
+
     def _cross_entropy_pair(self, ego_time, ego_placeid, ego_L, alter, alters,
-                               L, wb, length_alters, temp_shuffle=False):
+                            L, wb, length_alters, temp_shuffle=False):
         """ Protected method (recursive structure): compute cross entropy related to statistics
         Args:
             ego_time: datetime,
@@ -337,46 +412,6 @@ class MeetupStrategy(Meetup):
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    # def _ego_recency_effect(self, ego, time_shift, egoshow=False):
-    #     # extraact information of ego and compute all the statistics for all egos
-    #     ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
-    #     ego_time = ego_time - timedelta(hours=time_shift)
-    #
-    #     ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
-    #     alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
-    #     N_alters = len(alters)
-    #
-    #     for alter in alters:
-    #         alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
-    #         alter_log2 = np.log2(length_alter_uniq)
-    #
-    #         total_time = sorted(ego_time + alter_time)
-    #         PTs = [total_time.index(x) for x in ego_time]
-    #
-    #         L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-    #                                       lambdas=True, e=self.epsilon)
-    #         wb[alterid] = self.weight(ego_L, L[alterid])
-    #         # length of alter placeid
-    #         length_alters[alterid] = length_alter
-    #
-    #     alters_L = L[:alterid + 1]
-    #     alters_length = length_alters[:alterid + 1]
-    #     wb_length = wb[:alterid + 1]
-    #     ave_length = self._ave(alters_length, wb_length)
-    #
-    #     CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
-    #                                                         alters_L, ave_length)
-    #     # alters + ego
-    #     alters_L.append(ego_L)
-    #     alters_length.append(length_ego)
-    #     ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
-    #     ave_length = self._ave(alters_length, ego_alters_weight)
-    #     CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
-    #                                                                 length_ego,
-    #                                                                 alters_L,
-    #                                                                 ave_length)
-    #     return [time_shift, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
-
     def _ego_meetup(self, ego, tempsave=False, egoshow=False,
                     temp_shuffle=False, social_shuffle=False):
         """ Protected method: obtain all the meetup-cross-entropy info for ego
@@ -411,8 +446,8 @@ class MeetupStrategy(Meetup):
         length_alters = [None] * N_alters
 
         ego_stats = [self._cross_entropy_pair(ego_time, ego_placeid, ego_L, alter, alters,
-                                                 L, wb, length_alters,
-                                                 temp_shuffle=temp_shuffle) for alter in alters]
+                                              L, wb, length_alters,
+                                              temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
                 'userid_y', 'Included Rank_tr', 'Weight_tr', 'alter_info_tr',
