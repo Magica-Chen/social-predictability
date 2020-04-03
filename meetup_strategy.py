@@ -1024,4 +1024,8 @@ def LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
 
         if lambdas:
             return L
-        return (1.0 * lenW2 / sum(L)) * np.log2(lenW1)
+
+        if sum(L) == lenW2:
+            return np.nan
+        else:
+            return (1.0 * lenW2 / sum(L)) * np.log2(lenW1)
