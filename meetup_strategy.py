@@ -378,7 +378,7 @@ class MeetupStrategy(Meetup):
         # for function cross_entropy, we need to have PTs
         # here we use LZ-cross entropy, which requires the length at least self.epsilon
         total_time = sorted(ego_time + alter_time)
-        PTs = [total_time.index(x) for x in ego_time]
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
         """ function cross_entropy can return L, as defintion of cumulative cross entropy, we need to get max """
         # compute cross entropy with only this alter
