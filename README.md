@@ -34,10 +34,14 @@ Of course, if you have similar attributes, but without different names, you **MU
 
 For example, if your dataset only has geo-coordinates (longitude and latitude), that’s fine, you can generate `placeid` first using geo-coordinates information and then use this code.
 
+**Updated**: Now you can use geo-coordinates (longitude and latitude) to perform the following experiments. 
+
 3. Obtain meetup information and temporal visited information, for example, [Weeplace dataset](https://drive.google.com/file/d/0BzpKyxX1dqTYYzRmUXRZMWloblU/view),
 
 ```python
 LetMeet = ms.Meetup(path='data/weeplace_checkins.csv')
+# or you can use
+# LetMeet = ms.Meetup(path='data/weeplace_checkins.csv', geoid=True)
 user_meetup = LetMeet.all_meetup()
 user_placeidT = LetMeet.temporal_placeid()
 ```
@@ -46,6 +50,8 @@ user_placeidT = LetMeet.temporal_placeid()
 
 ```python
 GoMeet = ms.MeetupStrategy(path='data/weeplace_checkins.csv', user_meetup=user_meetup, placeidT=user_placeidT)
+# or using geo-coordinates
+# GoMeet = ms.MeetupStrategy(path='data/weeplace_checkins.csv', geoid=True, user_meetup=user_meetup, placeidT=user_placeidT)
 ```
 
 In fact, you can define a MeetupStrategy directly by,
