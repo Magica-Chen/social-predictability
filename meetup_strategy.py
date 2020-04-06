@@ -41,8 +41,28 @@ class Meetup(object):
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
         self.user_meetup = None
         self.total_meetup = None
+        self.placeidT = None
         self.egolist = None
         self.alterlist = None
+
+    def _datetime_latest(self, user):
+        """
+        Protect method: extract datetime information for each user
+        :param user: string, user we choose
+        :return:list, ending time
+        """
+        if self.placeidT is None:
+            self.temporal_placeid()
+            self._datetime_latest(user)
+        else:
+            user_temporal_placeid = self.placeidT[user]
+            user_time = pd.to_datetime(user_temporal_placeid.index).tolist()
+            return user_time[-1]
+
+    def _former_count(self, ego_end, alter):
+        """Return the number of timestamps from alter before the ego_end time"""
+        time_alters = self.placeidT[alter]
+        return sum([x <= ego_end for x in time_alters])
 
     def find_meetup(self, ego):
         """ Find all the meetups for ego
@@ -50,6 +70,8 @@ class Meetup(object):
         :return: dataframe, filled with meetup information
         """
         df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
+        ego_end = self._datetime_latest(ego)
+
         df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetimeH']]
 
         """ Here meetup means two users appear in the same placeid at the same time, so we merge two 
@@ -65,6 +87,10 @@ class Meetup(object):
         # compute the percentage
         meetup[['percent']] = meetup[['count']] / meetup['count'].sum()
 
+        alterlist = meetup['userid_y'].tolist()
+        alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
+        meetup['N_previous'] = np.array(alters_former)
+
         return meetup
 
     def all_meetup(self):
@@ -77,9 +103,10 @@ class Meetup(object):
 
         return self.total_meetup
 
-    def meetup_filter(self, n_meetupers=100):
+    def meetup_filter(self, n_meetupers=100, n_previous=200):
         """
         Standing on the total_meetup, only choose some egos who have n_meetupers
+        :param n_previous: the number of previous checkin is required for alter
         :param n_meetupers: the number of meetupers the ego has
         :return: filtered user_meetup
         """
@@ -87,7 +114,12 @@ class Meetup(object):
             self.all_meetup()
             return self.meetup_filter(n_meetupers=n_meetupers)
         else:
-            meetupers_count = self.total_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
+            if n_previous is not None:
+                used_meetup = self.total_meetup[self.total_meetup['N_previous'] >= n_previous]
+            else:
+                used_meetup = self.total_meetup
+
+            meetupers_count = used_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
             self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
             self.user_meetup = self.total_meetup[self.total_meetup['userid_x'].isin(self.egolist)]
             self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
@@ -102,10 +134,10 @@ class Meetup(object):
         if userlist is not None:
             self.userlist = userlist
 
-        placeidT = {user: self.pdata[self.pdata['userid'] == user
-                                     ].set_index('datetime').sort_index()[['placeid']]
-                    for user in self.userlist}
-        return placeidT
+        self.placeidT = {user: self.pdata[self.pdata['userid'] == user
+                                          ].set_index('datetime').sort_index()[['placeid']]
+                         for user in self.userlist}
+        return self.placeidT
 
 
 class MeetupStrategy(Meetup):
