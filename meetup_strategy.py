@@ -45,7 +45,7 @@ class Meetup(object):
         self.egolist = None
         self.alterlist = None
 
-    def _datetime_latest(self, user):
+    def _extract_datetime(self, user, latest=False):
         """
         Protect method: extract datetime information for each user
         :param user: string, user we choose
@@ -53,15 +53,18 @@ class Meetup(object):
         """
         if self.placeidT is None:
             self.temporal_placeid()
-            self._datetime_latest(user)
+            self._extract_datetime(user, latest)
         else:
             user_temporal_placeid = self.placeidT[user]
-            user_time = pd.to_datetime(user_temporal_placeid.index).tolist()
-            return user_time[-1]
+            user_time = pd.to_datetime(user_temporal_placeid.index).to_pydatetime().tolist()
+            if latest:
+                return user_time[-1]
+            else:
+                return user_time
 
     def _former_count(self, ego_end, alter):
         """Return the number of timestamps from alter before the ego_end time"""
-        time_alters = self.placeidT[alter]
+        time_alters = self._extract_datetime(alter)
         return sum([x <= ego_end for x in time_alters])
 
     def find_meetup(self, ego):
@@ -70,7 +73,7 @@ class Meetup(object):
         :return: dataframe, filled with meetup information
         """
         df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
-        ego_end = self._datetime_latest(ego)
+        ego_end = self._extract_datetime(ego, latest=True)
 
         df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetimeH']]
 
@@ -90,6 +93,7 @@ class Meetup(object):
         alterlist = meetup['userid_y'].tolist()
         alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         meetup['N_previous'] = np.array(alters_former)
+        meetup['N_alter'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
         return meetup
 
@@ -146,7 +150,7 @@ class MeetupStrategy(Meetup):
     """
 
     def __init__(self, path, mins_records=200, geoid=False, resolution=None,
-                 n_meetupers=100, epsilon=2,
+                 n_meetupers=100, n_previous=200, epsilon=2,
                  user_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
@@ -157,6 +161,7 @@ class MeetupStrategy(Meetup):
         Arg:
             path, mins_records, geoid, resolution are from the mother class Meetup
             n_meetupers: int, the number of meetupers we set
+            n_previous: int, the number of checkins is required
             user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
             user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
@@ -170,7 +175,10 @@ class MeetupStrategy(Meetup):
             if n_meetupers is None:
                 self.user_meetup = self.all_meetup()
             else:
-                self.user_meetup = self.meetup_filter(n_meetupers)
+                if n_previous is None:
+                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
+                else:
+                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)                    
         else:
             self.user_meetup = user_meetup
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
