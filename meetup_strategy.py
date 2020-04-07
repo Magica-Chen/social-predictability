@@ -178,11 +178,14 @@ class MeetupStrategy(Meetup):
         if user_meetup is None:
             if n_meetupers is None:
                 self.user_meetup = self.all_meetup()
+                self.n_meetupers = 'NA'
             else:
                 if n_previous is None:
                     self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
                 else:
-                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)                    
+                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)
+                    
+                self.n_meetupers = n_meetupers
         else:
             self.user_meetup = user_meetup
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
