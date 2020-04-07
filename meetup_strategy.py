@@ -184,7 +184,6 @@ class MeetupStrategy(Meetup):
                     self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
                 else:
                     self.user_meetup = self.meetup_filter(n_meetupers, n_previous)
-                    
                 self.n_meetupers = n_meetupers
         else:
             self.user_meetup = user_meetup
