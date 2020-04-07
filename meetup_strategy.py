@@ -306,9 +306,9 @@ class MeetupStrategy(Meetup):
         :return:
             L: cross-parsed match length of ego given alter
             wb: the number of times that matches from ego are found in alter
-            length_alter: the length of placeid sequence
+            N_previous: the length of alter happens no later than the last checkin in ego
         """
-        alter_time, _, length_alter, alter_placeid = self._extract_info(alter)
+        alter_time, _, _, alter_placeid = self._extract_info(alter)
 
         total_time = sorted(ego_time + alter_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
@@ -316,7 +316,21 @@ class MeetupStrategy(Meetup):
         L = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                              lambdas=True, e=self.epsilon)
         wb = self.weight(ego_L, L)
-        return L, wb, length_alter
+        # only count the length no later than the last time of ego
+        length_alter_former = self._length_former(ego_time, alter_time)
+        return L, wb, length_alter_former
+
+    @staticmethod
+    def _length_former(ego_time, alter_time):
+        """
+        count how many points of alter_time happen no later than last ego time
+        :param ego_time: list of pd.timestamp
+        :param alter_time: list of pd.timestamp
+        :return: the number of points of alter_time happen no later than last ego time
+        """
+        ego_end = pd.to_datetime(ego_time).to_pydatetime().tolist()[-1]
+        time_alters = pd.to_datetime(alter_time).to_pydatetime().tolist()
+        return sum([x <= ego_end for x in time_alters])
 
     def _ego_alter_lag(self, ego, lag, egoshow=False):
         """
@@ -340,8 +354,7 @@ class MeetupStrategy(Meetup):
         Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
-        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time_delay,
-                                                                                   ego_placeid,
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_placeid,
                                                                                    ego_L,
                                                                                    alter)
                                                              for alter in alters]))
@@ -437,7 +450,9 @@ class MeetupStrategy(Meetup):
                                       lambdas=True, e=self.epsilon)
         wb[alterid] = self.weight(ego_L, L[alterid])
         # length of alter placeid
-        length_alters[alterid] = length_alter
+        # #length_alters[alterid] = length_alter
+        # use length_former to get valid length of alter
+        length_alters[alterid] = self._length_former(ego_time, alter_time)
 
         # for alters: top above all alters
         alters_L = L[:alterid + 1]
