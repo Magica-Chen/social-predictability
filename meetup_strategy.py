@@ -94,6 +94,7 @@ class Meetup(object):
         alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         meetup['N_previous'] = np.array(alters_former)
         meetup['N_alter'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
+        print(ego)
 
         return meetup
 
@@ -125,7 +126,7 @@ class Meetup(object):
 
             meetupers_count = used_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
             self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
-            self.user_meetup = self.total_meetup[self.total_meetup['userid_x'].isin(self.egolist)]
+            self.user_meetup = used_meetup[used_meetup['userid_x'].isin(self.egolist)]
             self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
             self.userlist = sorted(list(set(self.egolist + self.alterlist)))
             self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
@@ -151,7 +152,7 @@ class MeetupStrategy(Meetup):
 
     def __init__(self, path, mins_records=200, geoid=False, resolution=None,
                  n_meetupers=100, n_previous=200, epsilon=2,
-                 user_meetup=None, placeidT=None,
+                 user_meetup=None, total_meetup=None, placeidT=None,
                  user_stats=None, ego_stats=None,
                  tr_user_stats=None, tr_ego_stats=None,
                  sr_user_stats=None, sr_ego_stats=None,
@@ -171,6 +172,9 @@ class MeetupStrategy(Meetup):
         in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
         """
         super(MeetupStrategy, self).__init__(path, mins_records, geoid, resolution)
+        if total_meetup is not None:
+            self.total_meetup = total_meetup
+            
         if user_meetup is None:
             if n_meetupers is None:
                 self.user_meetup = self.all_meetup()
