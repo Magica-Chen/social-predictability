@@ -23,13 +23,14 @@ class Meetup(object):
     Create a Meetup class to extract useful information from raw csv dataset
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None):
+    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2):
         """
         :arg path: path of source file
         :arg mins_records: the required min number of records for each user
         :arg geoid: whether use geo-coordinates id than placeid
         :arg resolution: if geoid is true, what resolution will be used
-        :param path: string, the location of csv dataset
+        :arg path: string, the location of csv dataset
+        :arg epsilon, the shortest length required for predictability computation
         """
         # rdata means raw dataset and pdata means processed dataset
         # since we only needs userid, placieid and datetime in our computation,
@@ -44,6 +45,7 @@ class Meetup(object):
         self.placeidT = None
         self.egolist = None
         self.alterlist = None
+        self.epsilon = epsilon
 
     def _extract_datetime(self, user, latest=False):
         """
@@ -111,13 +113,13 @@ class Meetup(object):
     def meetup_filter(self, n_meetupers=100, n_previous=200):
         """
         Standing on the total_meetup, only choose some egos who have n_meetupers
-        :param n_previous: the number of previous checkin is required for alter
-        :param n_meetupers: the number of meetupers the ego has
+        :param n_previous: bool or int, the number of previous checkin is required for alter
+        :param n_meetupers: bool or int, the number of meetupers the ego has
         :return: filtered user_meetup
         """
         if self.total_meetup is None:
             self.all_meetup()
-            return self.meetup_filter(n_meetupers=n_meetupers)
+            return self.meetup_filter(n_meetupers=n_meetupers, n_previous=n_previous)
         else:
             if n_previous is not None:
                 used_meetup = self.total_meetup[self.total_meetup['N_previous'] >= n_previous]
@@ -125,7 +127,10 @@ class Meetup(object):
                 used_meetup = self.total_meetup
 
             meetupers_count = used_meetup.groupby('userid_x')['userid_y'].count().reset_index(name='count')
-            self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
+            if n_meetupers is not None:
+                self.egolist = sorted(meetupers_count[meetupers_count['count'] == n_meetupers]['userid_x'].tolist())
+            else:
+                self.egolist = sorted(meetupers_count['userid_x'].tolist())
             self.user_meetup = used_meetup[used_meetup['userid_x'].isin(self.egolist)]
             self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
             self.userlist = sorted(list(set(self.egolist + self.alterlist)))
@@ -144,73 +149,6 @@ class Meetup(object):
                          for user in self.userlist}
         return self.placeidT
 
-
-class MeetupStrategy(Meetup):
-    """
-    Create a Meetup Strategy class based on Meetup class to include all the computation
-    """
-
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None,
-                 n_meetupers=100, n_previous=200, epsilon=2,
-                 user_meetup=None, total_meetup=None, placeidT=None,
-                 user_stats=None, ego_stats=None,
-                 tr_user_stats=None, tr_ego_stats=None,
-                 sr_user_stats=None, sr_ego_stats=None,
-                 user_stats_all=None, ego_stats_all=None,
-                 total_recency=None):
-        """ MeetupStrategy needs to have several important inputs
-        Arg:
-            path, mins_records, geoid, resolution are from the mother class Meetup
-            n_meetupers: int, the number of meetupers we set
-            n_previous: int, the number of checkins is required
-            user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
-            placeidT: dict, include all the users' temporal placeid, keys are the userids
-            user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
-            ego_stats: DataFrame, cols = ['userid_x', other statas]
-
-        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
-        in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
-        """
-        super(MeetupStrategy, self).__init__(path, mins_records, geoid, resolution)
-        if total_meetup is not None:
-            self.total_meetup = total_meetup
-            
-        if user_meetup is None:
-            if n_meetupers is None:
-                self.user_meetup = self.all_meetup()
-                self.n_meetupers = 'NA'
-            else:
-                if n_previous is None:
-                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
-                else:
-                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)
-                self.n_meetupers = n_meetupers
-        else:
-            self.user_meetup = user_meetup
-            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
-            # alterlist, userlist and pdata.
-            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
-            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
-            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
-            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
-            self.n_meetupers = n_meetupers
-
-        if placeidT is None:
-            self.placeidT = self.temporal_placeid()
-        else:
-            self.placeidT = placeidT
-
-        self.epsilon = epsilon
-        self.user_stats = user_stats
-        self.ego_stats = ego_stats
-        self.tr_user_stats = tr_user_stats
-        self.tr_ego_stats = tr_ego_stats
-        self.sr_user_stats = sr_user_stats
-        self.sr_ego_stats = sr_ego_stats
-        self.user_stats_all = user_stats_all
-        self.ego_stats_all = ego_stats_all
-        self.total_recency = total_recency
-
     def _extract_info(self, user):
         """ Protect method: extract temporal-spatial information for each user
         Arg:
@@ -222,6 +160,9 @@ class MeetupStrategy(Meetup):
             N_placeid: int, the number of user's visited placeids
             user_placeid: list, time-ordered visited placeid in a list
         """
+        if self.placeidT is None:
+            self.temporal_placeid()
+
         user_temporal_placeid = self.placeidT[user]
         user_time = pd.to_datetime(user_temporal_placeid.index).tolist()
         user_placeid = user_temporal_placeid['placeid'].tolist()
@@ -271,7 +212,8 @@ class MeetupStrategy(Meetup):
             # count how many elements of ego_L is in alter_L
             return sum(map(lambda x: x > 1, alter_L))
 
-    def _ave(self, lenB, wB):
+    @staticmethod
+    def _ave(lenB, wB):
         """ Compute the average legnth of B
         Args:
             lenB: list, a list of the length of placeid of B, it might be nan
@@ -334,9 +276,76 @@ class MeetupStrategy(Meetup):
         time_alters = pd.to_datetime(alter_time).to_pydatetime().tolist()
         return sum([x <= ego_end for x in time_alters])
 
+
+class MeetupStrategy(Meetup):
+    """
+    Create a Meetup Strategy class based on Meetup class to include all the computation
+    """
+
+    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 n_meetupers=100, n_previous=200,
+                 user_meetup=None, total_meetup=None, placeidT=None,
+                 user_stats=None, ego_stats=None,
+                 tr_user_stats=None, tr_ego_stats=None,
+                 sr_user_stats=None, sr_ego_stats=None,
+                 user_stats_all=None, ego_stats_all=None,
+                 total_recency=None):
+        """ MeetupStrategy needs to have several important inputs
+        Arg:
+            path, mins_records, geoid, resolution are from the mother class Meetup
+            n_meetupers: int, the number of meetupers we set
+            n_previous: int, the number of checkins is required
+            user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
+            placeidT: dict, include all the users' temporal placeid, keys are the userids
+            user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
+            ego_stats: DataFrame, cols = ['userid_x', other statas]
+
+        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
+        in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
+        """
+        super(MeetupStrategy, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        if total_meetup is not None:
+            self.total_meetup = total_meetup
+
+        if user_meetup is None:
+            if n_meetupers is None:
+                self.user_meetup = self.all_meetup()
+                self.n_meetupers = 'NA'
+            else:
+                if n_previous is None:
+                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
+                else:
+                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)
+                self.n_meetupers = n_meetupers
+        else:
+            self.user_meetup = user_meetup
+            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
+            # alterlist, userlist and pdata.
+            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+            self.n_meetupers = n_meetupers
+
+        if placeidT is None:
+            self.placeidT = self.temporal_placeid()
+        else:
+            self.placeidT = placeidT
+
+        self.epsilon = epsilon
+        self.user_stats = user_stats
+        self.ego_stats = ego_stats
+        self.tr_user_stats = tr_user_stats
+        self.tr_ego_stats = tr_ego_stats
+        self.sr_user_stats = sr_user_stats
+        self.sr_ego_stats = sr_ego_stats
+        self.user_stats_all = user_stats_all
+        self.ego_stats_all = ego_stats_all
+        self.total_recency = total_recency
+
     def _ego_alter_lag(self, ego, lag, egoshow=False):
         """
-        extraact information of ego and compute all the statistics
+        extract information of ego and compute all the statistics
         :param ego: userid of ego
         :param lag: the number of hours removed from the previous
         :param egoshow: whether print ego
@@ -938,6 +947,142 @@ class MeetupStrategy(Meetup):
             fig.savefig(title, bbox_inches='tight')
 
 
+class MeetupStats(Meetup):
+    """
+    Create a Meetup (statistics) class based on Meetup class to include all the computation
+    """
+
+    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 n_previous=200,
+                 user_meetup=None, total_meetup=None, placeidT=None):
+        """
+        This class will compute entropy related stats and predictability to describe the dataset
+        :param path: dataset path
+        :param mins_records: int, the least records of user are required
+        :param geoid: bool, whether we use geo-location
+        :param resolution: bool or int, what is the resolution when we use geo-location
+        :param epsilon: int, the least length is required to compute predictability
+        :param n_previous: int, enough checkins are require no later than the last checkin of ego
+        :param user_meetup: DataFrame, meetupers network (after n_previous filter)
+        :param total_meetup: DataFrame, the whole meetupers network
+        :param placeidT: Dict, indexed by ego id and contains all temporal visitations
+        """
+        super(MeetupStats, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        if total_meetup is not None:
+            self.total_meetup = total_meetup
+
+        if user_meetup is None:
+            if n_previous is None:
+                self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=None)
+            else:
+                self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=n_previous)
+
+        else:
+            self.user_meetup = user_meetup
+            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
+            # alterlist, userlist and pdata.
+            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+
+        if placeidT is None:
+            self.placeidT = self.temporal_placeid()
+        else:
+            self.placeidT = placeidT
+
+        self.ego_stats = None
+
+    def _ego_alter(self, ego, egoshow=False):
+        """
+        extract information of ego and compute all the statistics
+        :param ego: userid of ego
+        :param egoshow: whether print ego
+        :return: CCE and Predictability for alters only and ego+alters case
+        """
+        #
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+        ego_info = np.log2(length_ego_uni)
+
+        ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
+        median_meetups = self.user_meetup[self.user_meetup['userid_x'] == ego]['meetup'].median()
+        n_meetupers = len(alters)
+
+        """ego only"""
+        total_time = sorted(ego_time + ego_time)
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
+
+        CE_ego = LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
+
+        """alters only"""
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_placeid,
+                                                                                   ego_L,
+                                                                                   alter)
+                                                             for alter in alters]))
+        median_valid_len = np.median(alters_length)
+        ave_length = self._ave(alters_length, wb_length)
+        weighted_ave_len = ave_length
+        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+                                                            alters_L, ave_length)
+        """alters + ego"""
+        alters_L.append(ego_L)
+        alters_length.append(length_ego)
+        ego_alters_weight = wb_length + [self.weight(ego_L)]
+        ave_length = self._ave(alters_length, ego_alters_weight)
+        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+                                                                    length_ego,
+                                                                    alters_L,
+                                                                    ave_length)
+        if egoshow:
+            print(ego)
+
+        return [ego, ego_info,
+                n_meetupers, median_meetups, median_valid_len, weighted_ave_len,
+                CE_ego, Pi_ego,
+                CCE_alters, CCE_ego_alters,
+                Pi_alters, Pi_ego_alters]
+
+    def ego_info(self, verbose=False, filesave=False):
+        """
+        Combine all egos and all time delays as a dataframe
+        :param filesave: whether save the results in csv file
+        :param verbose: whether display the step
+        :return: DataFrame,contains all egos' info
+        """
+        ego_alters = [self._ego_alter(ego, verbose) for ego in self.egolist]
+
+        self.ego_stats = pd.DataFrame(ego_alters, columns=['ego', 'ego_info',
+                                                           'n_meetupers', 'n_meetups(median)',
+                                                           'len_alters(median)', 'w_len_alters',
+                                                           'CE_ego', 'Pi_ego',
+                                                           'CCE_alters', 'CCE_ego_alters',
+                                                           'Pi_alters', 'Pi_ego_alters']
+                                      )
+        if filesave:
+            name = 'MeetupStats.csv'
+            self.ego_stats.to_csv(name, index=False)
+
+        return self.ego_stats
+
+    def ego_gender(self, gender_path):
+        """
+        :param gender_path: string, the gender dataset path
+        :return: DataFrame, contains all egos's info including gender
+        """
+        if self.ego_stats is None:
+            print('Generating ego info now, please wait')
+            self.ego_info(verbose=True)
+
+        df_gender = pd.read_csv(gender_path)
+        name = self.ego_stats.apply(lambda row: first_name_finder(row.userid_y), axis=1)
+        ego_gender = self.ego_stats.assign(First_Name=name.values)
+        ego_info_gender = ego_gender.merge(df_gender, how='left', on='First_Name')
+
+        return ego_info_gender.dropna()
+
+
 """ Global function below here """
 
 
@@ -1090,3 +1235,11 @@ def LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
             return np.nan
         else:
             return (1.0 * lenW2 / sum(L)) * np.log2(lenW1)
+
+
+def first_name_finder(s):
+    if '-' in s:
+        id = s.index('-')
+        return s[:id]
+    else:
+        return 'unknown'
