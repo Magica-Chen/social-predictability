@@ -365,7 +365,8 @@ class MeetupStrategy(Meetup):
         Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
-        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_placeid,
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
+                                                                                   ego_placeid,
                                                                                    ego_L,
                                                                                    alter)
                                                              for alter in alters]))
@@ -1017,7 +1018,8 @@ class MeetupStats(Meetup):
         Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
-        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_placeid,
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
+                                                                                   ego_placeid,
                                                                                    ego_L,
                                                                                    alter)
                                                              for alter in alters]))
