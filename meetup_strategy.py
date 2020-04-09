@@ -7,13 +7,13 @@
 
 import pandas as pd
 import numpy as np
-import mpmath
-import collections
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import random
 from datetime import timedelta
+from preprocessing import geo2id, pre_processing
+import util
 
 SEED = 2020  # set random seed for our random function
 
@@ -241,7 +241,7 @@ class Meetup(object):
     def entropy_predictability(self, length_ego_uni, length_ego, alters_L, ave_length):
         """ Compute entropy and predictability using the definition"""
         CCE_alters = self.cumulative_cross_entropy(length_ego, alters_L, ave_length)
-        Pi_alters = getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
+        Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
         return CCE_alters, Pi_alters
 
     def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter):
@@ -261,8 +261,8 @@ class Meetup(object):
         total_time = sorted(ego_time + alter_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
-        L = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-                             lambdas=True, e=self.epsilon)
+        L = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                  lambdas=True, e=self.epsilon)
         wb = self.weight(ego_L, L)
         # only count the length no later than the last time of ego
         length_alter_former = self._length_former(ego_time, alter_time)
@@ -359,14 +359,14 @@ class MeetupStrategy(Meetup):
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
         ego_time_delay = [v - timedelta(hours=lag) for v in ego_time]
 
-        ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
         """ego only"""
         total_time = sorted(ego_time_delay + ego_time)
         PTs = [(total_time.index(x) - ego_time_delay.index(x)) for x in ego_time_delay]
 
-        CE_ego = LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
-        Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
+        CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = util.getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
         alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
@@ -457,14 +457,14 @@ class MeetupStrategy(Meetup):
         # compute cross entropy with only this alter
         # Obtain the basic information to extend L, wb, length_alters
         # obtain the cross-parsed match length for this ego-alter pair
-        L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-                                      lambdas=True, e=self.epsilon)
+        L[alterid] = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                           lambdas=True, e=self.epsilon)
         wb[alterid] = self.weight(ego_L, L[alterid])
         # length of alter placeid
         # #length_alters[alterid] = length_alter
         # use length_former to get valid length of alter
         length_alters[alterid] = self._length_former(ego_time, alter_time)
-        
+
         """ For alter"""
         CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
                                                          [L[alterid]], length_alters[alterid])
@@ -531,7 +531,7 @@ class MeetupStrategy(Meetup):
             interim.remove(ego)
             alters = random.choices(interim, k=N_alters)
 
-        ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         # initial space
         L = [None] * N_alters
         wb = [None] * N_alters
@@ -635,8 +635,8 @@ class MeetupStrategy(Meetup):
         ego_time, length_ego_uni, length_ego, ego_placeid = zip(*[self._extract_info(ego)
                                                                   for ego in self.egolist[start:end]])
         N = end - start
-        ego_LZ_entropy = [LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
-        Pi_ego = [getPredictability(length_ego_uni[i], ego_LZ_entropy[i], e=self.epsilon)
+        ego_LZ_entropy = [util.LZ_entropy(ego_placeid[i], e=self.epsilon) for i in range(N)]
+        Pi_ego = [util.getPredictability(length_ego_uni[i], ego_LZ_entropy[i], e=self.epsilon)
                   for i in range(N)]
         ego_log2 = np.log2(list(length_ego_uni))
         df_ego = pd.DataFrame(data={'userid_x': self.egolist[start:end],
@@ -973,6 +973,9 @@ class MeetupStats(Meetup):
         :param placeidT: Dict, indexed by ego id and contains all temporal visitations
         """
         super(MeetupStats, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        self.ego_stats = None
+        self.ego_stats_gender = None
+
         if total_meetup is not None:
             self.total_meetup = total_meetup
 
@@ -996,8 +999,6 @@ class MeetupStats(Meetup):
         else:
             self.placeidT = placeidT
 
-        self.ego_stats = None
-
     def _ego_alter(self, ego, egoshow=False):
         """
         extract information of ego and compute all the statistics
@@ -1009,7 +1010,7 @@ class MeetupStats(Meetup):
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
         ego_info = np.log2(length_ego_uni)
 
-        ego_L = LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
         median_meetups = self.user_meetup[self.user_meetup['userid_x'] == ego]['meetup'].median()
         n_meetupers = len(alters)
@@ -1018,8 +1019,8 @@ class MeetupStats(Meetup):
         total_time = sorted(ego_time + ego_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
-        CE_ego = LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
-        Pi_ego = getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
+        CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = util.getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alters only"""
         alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
@@ -1082,170 +1083,8 @@ class MeetupStats(Meetup):
             self.ego_info(verbose=True)
 
         df_gender = pd.read_csv(gender_path)
-        name = self.ego_stats.apply(lambda row: first_name_finder(row.userid_y), axis=1)
+        name = self.ego_stats.apply(lambda row: util.first_name_finder(row.ego), axis=1)
         ego_gender = self.ego_stats.assign(First_Name=name.values)
-        ego_info_gender = ego_gender.merge(df_gender, how='left', on='First_Name')
+        self.ego_stats_gender = ego_gender.merge(df_gender, how='left', on='First_Name')
 
-        return ego_info_gender.dropna()
-
-
-""" Global function below here """
-
-
-def geo2id(df, resolution=None, lat='lat', lon='lon'):
-    """ convert lat and lon to a geo-id
-    :param df: dataframe or series with geo-coordinate information
-    :param lon: longitude
-    :param lat: latitude
-    :param resolution: what the resolution used when taking geo-id
-    :return: dataframe with geo-id
-    """
-    if resolution is not None:
-        df = pd.DataFrame(df)
-        df['lat'] = df['lat'].map(lambda x: round(x, resolution))
-        df['lon'] = df['lon'].map(lambda x: round(x, resolution))
-    df_new = df.groupby([lat, lon]).size().reset_index(name='count')[[lat, lon]]
-    df_new['geo-id'] = df_new.index
-    df_new['geo-id'] = df_new['geo-id'].map(lambda x: '(' + str(x) + ')')
-    return df.merge(df_new, how='left', on=[lat, lon])
-
-
-def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolution=4):
-    """ pre-processing the given dataset
-    :param df_raw: dataframe, raw dataset
-    :param min_records: the min requirement of users' records, remove all invalid users' information.
-    :param filesave: whether save the pre-processed results
-    :param geoid: whether use geo-id
-    :param resolution: when geo-id used, the resolution
-    :return: pre-processed dataframe
-    """
-    df_wp = df_raw.dropna(subset=['userid', 'placeid', 'datetime'])[[
-        'userid', 'placeid', 'datetime', 'lat', 'lon']]
-
-    df = df_wp.groupby('userid')['datetime'].count().reset_index(name='count')
-    mask1 = df['count'].values >= min_records
-    user = pd.DataFrame(df.values[mask1], df.index[mask1], df.columns)['userid'].tolist()
-    # for computation, ignore minutes and seconds
-    df_wp['datetime'] = pd.to_datetime(df_wp['datetime'])
-    df_wp['datetimeH'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
-    df_processed = df_wp[df_wp['userid'].isin(user)]
-
-    if geoid:
-        df_processed = geo2id(df_processed, resolution)
-        df_processed = df_processed.drop('placeid', axis=1)
-        df_processed = df_processed.rename(columns={'geo-id': 'placeid'})
-
-    df_processed = df_processed.drop(['lat', 'lon'], axis=1)
-
-    if filesave:
-        if geoid:
-            name = 'data/weeplace_checkins_' + str(min_records) + 'Geo-UPD' + str(resolution) + '.csv'
-        else:
-            name = 'data/weeplace_checkins_' + str(min_records) + 'UPD.csv'
-        df_processed.to_csv(name, index=False)
-
-    return df_processed
-
-
-# As required by algorithm, N should be large, we set e as the threshold of N.
-# if it is smaller than threshold, we will just print NA
-
-
-def getPredictability(N, S, e=100):
-    if (N >= e) & np.isfinite(S):
-        f = lambda x: (((1 - x) / (N - 1)) ** (1 - x)) * x ** x - 2 ** (-S)
-        root = mpmath.findroot(f, 1)
-        return float(root.real)
-    else:
-        return np.nan
-
-
-def shannon_entropy(seq):
-    """Plain old Shannon entropy (in bits)."""
-    C, n = collections.Counter(seq), float(len(seq))
-    return -sum(c / n * np.log2(c / n) for c in list(C.values()))
-
-
-# Since the LZ-entropy estimation only converge when the length is large,
-# so we add one more arg for LZ-entropy function
-def LZ_entropy(seq, lambdas=False, e=100):
-    """Estimate the entropy rate of the symbols encoded in `seq`, a list of
-    strings.
-
-    Kontoyiannis, I., Algoet, P. H., Suhov, Y. M., & Wyner, A. J. (1998).
-    Nonparametric entropy estimation for stationary processes and random
-    fields, with applications to English text. IEEE Transactions on Information
-    Theory, 44(3), 1319-1327.
-
-    Bagrow, James P., Xipei Liu, and Lewis Mitchell. "Information flow reveals
-    prediction limits in online social activity." Nature human behaviour 3.2
-    (2019): 122-128.
-    """
-    N = len(seq)
-
-    if N < e:
-        return np.nan
-    else:
-        L = []
-        for i, w in enumerate(seq):
-            seen = True
-            prevSeq = " %s " % " ".join(seq[0:i])
-            c = i
-            while seen and c < N:
-                c += 1
-                seen = (" %s " % " ".join(seq[i:c])) in prevSeq
-            l = c - i
-            L.append(l)
-
-        if lambdas:
-            return L
-        return (1.0 * N / sum(L)) * np.log2(N)
-
-
-# Since the LZ-cross_entropy estimation only converge when the length is large,
-# so we add one more arg for this function
-def LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
-    """Find the cross entropy H_cross(W2|W1), how many bits we would need to
-    encode the data in W2 using the information in W1. W1 and W2 are lists of
-    strings, PTs is a list of integers with the same length as W2 denoting the
-    relative time ordering of W1 vs. W2. These integers tell us the position
-    PTs[x] = i in W1 such that all symbols in W1[:i] occurred before the x-th
-    word in W2.
-
-    Bagrow, James P., Xipei Liu, and Lewis Mitchell. "Information flow reveals
-    prediction limits in online social activity." Nature human behaviour 3.2
-    (2019): 122-128.
-    """
-
-    lenW1 = len(W1)
-    lenW2 = len(W2)
-
-    if lenW1 < e | lenW2 < e:
-        return np.nan
-    else:
-        L = []
-        for j, (wj, i) in enumerate(zip(W2, PTs)):
-            seen = True
-            prevW1 = " %s " % " ".join(W1[:i])
-            c = j
-            while seen and c < lenW2:
-                c += 1
-                seen = (" %s " % " ".join(W2[j:c]) in prevW1)
-            l = c - j
-            L.append(l)
-
-        if lambdas:
-            return L
-
-        if sum(L) == lenW2:
-            return np.nan
-        else:
-            return (1.0 * lenW2 / sum(L)) * np.log2(lenW1)
-
-
-def first_name_finder(s):
-    if '-' in s:
-        id = s.index('-')
-        return s[:id]
-    else:
-        return 'unknown'
+        return self.ego_stats_gender
