@@ -183,10 +183,14 @@ class Meetup(object):
             float, cross entropy for a pair of ego and alters
         """
         # remove all the alters_L with nan
-        alters_L = list(filter(None, alters_L))
-        clean_alters_L = [x for x in alters_L if ~np.isnan(x).all()]
-        alters_Lmax = np.amax(clean_alters_L, axis=0)
-        return (1.0 * length_ego / sum(alters_Lmax)) * np.log2(ave_length)
+        if len(alters_L) == 1:
+            sum_L = np.nansum(alters_L)
+        else:
+            alters_L = list(filter(None, alters_L))
+            clean_alters_L = [x for x in alters_L if ~np.isnan(x).all()]
+            alters_Lmax = np.amax(clean_alters_L, axis=0)
+            sum_L = sum(alters_Lmax)
+        return (1.0 * length_ego / sum_L) * np.log2(ave_length)
 
     @staticmethod
     def weight(ego_L, alter_L=None):
@@ -451,11 +455,6 @@ class MeetupStrategy(Meetup):
 
         """ function cross_entropy can return L, as defintion of cumulative cross entropy, we need to get max """
         # compute cross entropy with only this alter
-        """ For alter"""
-        CE_alter = LZ_cross_entropy(alter_placeid, ego_placeid, PTs, e=self.epsilon)
-        Pi_alter = getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
-
-        """ For all above alters """
         # Obtain the basic information to extend L, wb, length_alters
         # obtain the cross-parsed match length for this ego-alter pair
         L[alterid] = LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
@@ -465,7 +464,12 @@ class MeetupStrategy(Meetup):
         # #length_alters[alterid] = length_alter
         # use length_former to get valid length of alter
         length_alters[alterid] = self._length_former(ego_time, alter_time)
+        
+        """ For alter"""
+        CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
+                                                         [L[alterid]], length_alters[alterid])
 
+        """ For all above alters """
         # for alters: top above all alters
         alters_L = L[:alterid + 1]
         alters_length = length_alters[:alterid + 1]
