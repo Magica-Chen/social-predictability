@@ -466,8 +466,11 @@ class MeetupStrategy(Meetup):
         length_alters[alterid] = self._length_former(ego_time, alter_time)
 
         """ For alter"""
-        CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
-                                                         [L[alterid]], length_alters[alterid])
+        if wb[alterid] == 0:
+            CE_alter, Pi_alter = np.nan, np.nan
+        else:
+            CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
+                                                             [L[alterid]], length_alters[alterid])
 
         """ For all above alters """
         # for alters: top above all alters
@@ -499,7 +502,14 @@ class MeetupStrategy(Meetup):
                                                                     length_ego,
                                                                     alters_L,
                                                                     ave_length)
-        return [alter, rank, wb[alterid], alter_log2,
+
+        """ classify alters as helpful and useless"""
+        if CE_alter < np.log2(length_ego_uni):
+            group = 'helpful'
+        else:
+            group = 'useless'
+
+        return [alter, group, rank, wb[alterid], alter_log2,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
@@ -542,7 +552,7 @@ class MeetupStrategy(Meetup):
                                               temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'Included Rank_tr', 'Weight_tr', 'alter_info_tr',
+                'userid_y', 'group', 'Included Rank_tr', 'Weight_tr', 'alter_info_tr',
                 'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
                 'Pi_alter_tr', 'Pi_alters_tr', 'Pi_ego_alter_tr', 'Pi_ego_alters_tr',
             ])
@@ -550,7 +560,7 @@ class MeetupStrategy(Meetup):
             meetup_ego.insert(0, 'userid_x', ego)
         elif social_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'Included Rank_sr', 'Weight_sr', 'alter_info_sr',
+                'userid_y', 'group', 'Included Rank_sr', 'Weight_sr', 'alter_info_sr',
                 'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
                 'Pi_alter_sr', 'Pi_alters_sr', 'Pi_ego_alter_sr', 'Pi_ego_alters_sr',
             ])
@@ -558,7 +568,7 @@ class MeetupStrategy(Meetup):
             meetup_ego.insert(0, 'userid_x', ego)
         else:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'Included Rank', 'Weight', 'alter_info',
+                'userid_y', 'group', 'Included Rank', 'Weight', 'alter_info',
                 'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
                 'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
             ])
@@ -698,8 +708,18 @@ class MeetupStrategy(Meetup):
             filesave: whether save the final merged file
 
         Return:
-            None
+            ego+alters all information
         """
+        if all(v is not None for v in [self.user_stats, self.ego_stats]):
+            ego_alter_stats = self.user_stats.merge(self.ego_stats.copy().drop(columns=['CCE_alters', 'CCE_ego_alters',
+                                                                                        'Pi_alters', 'Pi_ego_alters']),
+                                                    how='left', on=['userid_x'])
+            if filesave:
+                name = 'user-meetup-all-' + str(self.n_meetupers) + '.csv'
+                ego_alter_stats.to_csv(name, index=False)
+
+            return ego_alter_stats
+
         if all(v is not None for v in [self.user_stats, self.tr_user_stats, self.sr_user_stats]):
             left = self.user_stats.merge(self.tr_user_stats, on=['userid_x',
                                                                  'userid_y']
