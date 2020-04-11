@@ -1104,9 +1104,23 @@ class MeetupStats(Meetup):
             print('Generating ego info now, please wait')
             self.ego_info(verbose=True)
 
+        name_x = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_x), axis=1)
+        name_y = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_y), axis=1)
+
+        ego_name = self.user_meetup.assign(First_Name_x=name_x.values, First_Name_y=name_y.values)
+
         df_gender = pd.read_csv(gender_path)
-        name = self.ego_stats.apply(lambda row: util.first_name_finder(row.ego), axis=1)
-        ego_gender = self.ego_stats.assign(First_Name=name.values)
-        self.ego_stats_gender = ego_gender.merge(df_gender, how='left', on='First_Name')
+
+        ego_gender = ego_name.merge(df_gender, how='left', left_on='First_Name_x', right_on='First_Name').drop(
+            columns='First_Name')
+        ego_gender = ego_gender.merge(df_gender, how='left', left_on='First_Name_y', right_on='First_Name').drop(
+            columns='First_Name').fillna('unknown')
+
+        ego_gender_pivot = ego_gender.groupby(['userid_x', 'Gender_Guesser_y']).size().reset_index(
+            name='count').pivot(index='userid_x', columns='Gender_Guesser_y', values='count').fillna(0)
+        ego_gender_info = pd.DataFrame(ego_gender_pivot.apply(lambda x: x / x.sum(), axis=1).to_records())
+        ego_gender_info.columns = ['ego', 'alter:andy', 'alters:femal', 'alter:male',
+                                   'alter:mostly_female', 'alter:male', 'alter:unknown']
+        self.ego_stats_gender = self.ego_stats.merge(ego_gender_info, how='left', on='ego')
 
         return self.ego_stats_gender
