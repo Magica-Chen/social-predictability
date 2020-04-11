@@ -312,26 +312,16 @@ class MeetupStrategy(Meetup):
             self.total_meetup = total_meetup
 
         if user_meetup is None:
-            if n_meetupers is None:
-                if total_meetup is None:
-                    self.all_meetup()
-                self.user_meetup = self.total_meetup
-                self.n_meetupers = 'NA'
-            else:
-                if n_previous is None:
-                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous=None)
-                else:
-                    self.user_meetup = self.meetup_filter(n_meetupers, n_previous)
-                self.n_meetupers = n_meetupers
+            self.user_meetup = self.meetup_filter(n_meetupers=n_meetupers, n_previous=n_previous)
         else:
             self.user_meetup = user_meetup
             self.n_meetupers = n_meetupers
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
             # alterlist, userlist and pdata.
-        self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
-        self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
-        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
-        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
             self.placeidT = self.temporal_placeid()
@@ -1095,8 +1085,9 @@ class MeetupStats(Meetup):
 
         return self.ego_stats
 
-    def ego_gender(self, gender_path):
+    def ego_gender(self, gender_path, filesave=False):
         """
+        :param filesave: whether save the file
         :param gender_path: string, the gender dataset path
         :return: DataFrame, contains all egos's info including gender
         """
@@ -1122,5 +1113,8 @@ class MeetupStats(Meetup):
         ego_gender_info.columns = ['ego', 'alter:andy', 'alters:femal', 'alter:male',
                                    'alter:mostly_female', 'alter:male', 'alter:unknown']
         self.ego_stats_gender = self.ego_stats.merge(ego_gender_info, how='left', on='ego')
+        if filesave:
+            name = 'MeetupStatsGender.csv'
+            self.ego_stats_gender.to_csv(name, index=False)
 
         return self.ego_stats_gender
