@@ -325,13 +325,13 @@ class MeetupStrategy(Meetup):
                 self.n_meetupers = n_meetupers
         else:
             self.user_meetup = user_meetup
+            self.n_meetupers = n_meetupers
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
             # alterlist, userlist and pdata.
-            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
-            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
-            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
-            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
-            self.n_meetupers = n_meetupers
+        self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+        self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
             self.placeidT = self.temporal_placeid()
