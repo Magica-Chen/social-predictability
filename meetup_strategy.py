@@ -1121,7 +1121,6 @@ class MeetupGender(MeetupWhole):
     """
     Meetup Strategy focusing on Gender aspect
     """
-    
 
     def __init__(self, path, gender_path, mins_records=200, geoid=False, resolution=None, epsilon=2,
                  n_previous=200,
@@ -1177,6 +1176,7 @@ class MeetupGender(MeetupWhole):
         # combine two parts of meetup information
         df_ego_meetup = meetupers[meetupers['userid_x'] == ego]
         meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
+        meetup_ego['n_meetupers'] = N_alters
 
         if egoshow:
             print(ego)
