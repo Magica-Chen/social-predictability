@@ -281,33 +281,26 @@ class Meetup(object):
         return sum([x <= ego_end for x in time_alters])
 
 
-class MeetupStrategy(Meetup):
+class MeetupOneByOne(Meetup):
     """
     Create a Meetup Strategy class based on Meetup class to include all the computation
     """
 
     def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
                  n_meetupers=100, n_previous=200,
-                 user_meetup=None, total_meetup=None, placeidT=None,
-                 user_stats=None, ego_stats=None,
-                 tr_user_stats=None, tr_ego_stats=None,
-                 sr_user_stats=None, sr_ego_stats=None,
-                 user_stats_all=None, ego_stats_all=None,
-                 total_recency=None):
-        """ MeetupStrategy needs to have several important inputs
+                 user_meetup=None, total_meetup=None, placeidT=None):
+        """ MeetupOneByOne needs to have several important inputs
         Arg:
             path, mins_records, geoid, resolution are from the mother class Meetup
             n_meetupers: int, the number of meetupers we set
             n_previous: int, the number of checkins is required
             user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
-            user_stats: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage', and other statas]
-            ego_stats: DataFrame, cols = ['userid_x', other statas]
 
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
-        in advance and when you initialise MeetupStrategy, you can import them as inputs, it will reduce time.
+        in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
         """
-        super(MeetupStrategy, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(MeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
         if total_meetup is not None:
             self.total_meetup = total_meetup
 
@@ -329,15 +322,15 @@ class MeetupStrategy(Meetup):
             self.placeidT = placeidT
 
         self.epsilon = epsilon
-        self.user_stats = user_stats
-        self.ego_stats = ego_stats
-        self.tr_user_stats = tr_user_stats
-        self.tr_ego_stats = tr_ego_stats
-        self.sr_user_stats = sr_user_stats
-        self.sr_ego_stats = sr_ego_stats
-        self.user_stats_all = user_stats_all
-        self.ego_stats_all = ego_stats_all
-        self.total_recency = total_recency
+        self.user_stats = None
+        self.ego_stats = None
+        self.tr_user_stats = None
+        self.tr_ego_stats = None
+        self.sr_user_stats = None
+        self.sr_ego_stats = None
+        self.user_stats_all = None
+        self.ego_stats_all = None
+        self.total_recency = None
 
     def _ego_alter_lag(self, ego, lag, egoshow=False):
         """
@@ -964,7 +957,7 @@ class MeetupStrategy(Meetup):
             fig.savefig(title, bbox_inches='tight')
 
 
-class MeetupStats(Meetup):
+class MeetupWhole(Meetup):
     """
     Create a Meetup (statistics) class based on Meetup class to include all the computation
     """
@@ -984,7 +977,7 @@ class MeetupStats(Meetup):
         :param total_meetup: DataFrame, the whole meetupers network
         :param placeidT: Dict, indexed by ego id and contains all temporal visitations
         """
-        super(MeetupStats, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(MeetupWhole, self).__init__(path, mins_records, geoid, resolution, epsilon)
         self.ego_stats = None
         self.ego_stats_gender = None
 
@@ -1080,7 +1073,7 @@ class MeetupStats(Meetup):
                                                            'Pi_alters', 'Pi_ego_alters']
                                       )
         if filesave:
-            name = 'MeetupStats.csv'
+            name = 'MeetupWhole.csv'
             self.ego_stats.to_csv(name, index=False)
 
         return self.ego_stats
@@ -1095,18 +1088,7 @@ class MeetupStats(Meetup):
             print('Generating ego info now, please wait')
             self.ego_info(verbose=True)
 
-        name_x = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_x), axis=1)
-        name_y = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_y), axis=1)
-
-        ego_name = self.user_meetup.assign(First_Name_x=name_x.values, First_Name_y=name_y.values)
-
-        df_gender = pd.read_csv(gender_path)
-
-        ego_gender = ego_name.merge(df_gender, how='left', left_on='First_Name_x', right_on='First_Name').drop(
-            columns='First_Name')
-        ego_gender = ego_gender.merge(df_gender, how='left', left_on='First_Name_y', right_on='First_Name').drop(
-            columns='First_Name').fillna('unknown')
-
+        ego_gender = self._gender_info(gender_path)
         ego_gender_pivot = ego_gender.groupby(['userid_x', 'Gender_Guesser_y']).size().reset_index(
             name='count').pivot(index='userid_x', columns='Gender_Guesser_y', values='count').fillna(0)
         ego_gender_info = pd.DataFrame(ego_gender_pivot.apply(lambda x: x / x.sum(), axis=1).to_records())
@@ -1118,3 +1100,112 @@ class MeetupStats(Meetup):
             self.ego_stats_gender.to_csv(name, index=False)
 
         return self.ego_stats_gender
+
+    def _gender_info(self, gender_path):
+        name_x = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_x), axis=1)
+        name_y = self.user_meetup.apply(lambda row: util.first_name_finder(row.userid_y), axis=1)
+        ego_name = self.user_meetup.assign(First_Name_x=name_x.values, First_Name_y=name_y.values)
+        df_gender = pd.read_csv(gender_path)
+
+        ego_gender = ego_name.merge(df_gender, how='left', left_on='First_Name_x', right_on='First_Name').drop(
+            columns='First_Name')
+        ego_gender = ego_gender.merge(df_gender, how='left', left_on='First_Name_y', right_on='First_Name').drop(
+            columns='First_Name').fillna('unknown')
+        return ego_gender
+
+
+class MeetupGender(MeetupOneByOne, MeetupWhole):
+    """
+    Meetup Strategy focusing on Gender aspect
+    """
+
+    def __init__(self, path, gender_path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 n_meetupers=None, n_previous=200,
+                 user_meetup=None, total_meetup=None, placeidT=None):
+        """
+        All inputs are from the father class MeetupWhole and MeetupOneByOne
+        """
+        super(MeetupGender, self).__init__(path=path, mins_records=mins_records, geoid=geoid,
+                                           resolution=resolution, epsilon=epsilon,
+                                           n_meetupers=n_meetupers, n_previous=n_previous,
+                                           user_meetup=user_meetup,
+                                           total_meetup=total_meetup,
+                                           placeidT=placeidT)
+
+        meetup_gender = self._gender_info(gender_path)
+        # remove all unknown points
+        meetup_gender = meetup_gender.replace(['male', 'female', 'mostly_male', 'mostly_female'],
+                                              ['M', 'F', 'AM', 'AF'])
+
+        self.user_meetup = meetup_gender[~((meetup_gender['Gender_Guesser_x'].isin(['unknown', 'andy'])) |
+                                           (meetup_gender['Gender_Guesser_y'].isin(['unknown', 'andy'])))]
+        self.user_stats_M = None
+        self.user_stats_F = None
+        self.user_stats_M_F = None
+        self.user_stats_AM = None
+        self.user_stats_AF = None
+        self.user_stats_AM_AF = None
+        self.user_stats_gender = None
+
+    def _ego_meetup(self, ego, meetupers, egoshow=False, gender='gender'):
+
+        # extraact information of ego and compute all the statistics for all egos
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+
+        # obtain the alters for ego
+        alters = meetupers[meetupers['userid_x'] == ego]['userid_y'].tolist()
+        N_alters = len(alters)
+
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        # initial space
+        L = [None] * N_alters
+        wb = [None] * N_alters
+        length_alters = [None] * N_alters
+
+        ego_stats = [self._cross_entropy_pair(ego_time, ego_placeid, ego_L, alter, alters,
+                                              L, wb, length_alters) for alter in alters]
+
+        ego_stats = pd.DataFrame(ego_stats, columns=[
+            'userid_y', 'group', 'Included Rank', 'Weight', 'alter_info',
+            'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
+            'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
+        ])
+
+        # combine two parts of meetup information
+        df_ego_meetup = meetupers[meetupers['userid_x'] == ego]
+        meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
+
+        if egoshow:
+            print(ego)
+        return meetup_ego
+
+    def ego_alter_info(self, filesave=False, verbose=False, gender='gender'):
+        """ Produce all the ego-alter information
+        Args:
+            filesave: bool, whether save the file to csv file
+            verbose: bool, whether print the ego in step
+            gender: string or list of string.
+        Return:
+            user_stats, and also add to the class self oject, self.user_stats
+        """
+        if not isinstance(gender, list):
+            gender = [gender]
+        if gender is 'gender':
+            meetupers = self.user_meetup
+        else:
+            meetupers = self.user_meetup[self.user_meetup['Gender_Guessor_y'].isin(gender)]
+
+        egolist = sorted(list(set(meetupers['userid_x'].tolist())))
+        meetup_list = [self._ego_meetup(ego, meetupers, egoshow=verbose)
+                       for ego in egolist]
+        user_stats = pd.concat(meetup_list, sort=False)
+
+        name = '_'.join(map(str, gender))
+        locals()['self.user_stats_' + name] = user_stats
+
+        # save the file
+        if filesave:
+            name = 'user-meetup-info-' + name + '.csv'
+            user_stats.to_csv(name, index=False)
+
+        return user_stats
