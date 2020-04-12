@@ -977,6 +977,7 @@ class MeetupWhole(Meetup):
         :param total_meetup: DataFrame, the whole meetupers network
         :param placeidT: Dict, indexed by ego id and contains all temporal visitations
         """
+        
         super(MeetupWhole, self).__init__(path, mins_records, geoid, resolution, epsilon)
         self.ego_stats = None
         self.ego_stats_gender = None
@@ -1011,7 +1012,7 @@ class MeetupWhole(Meetup):
         :param egoshow: whether print ego
         :return: CCE and Predictability for alters only and ego+alters case
         """
-        #
+
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
         ego_info = np.log2(length_ego_uni)
 
@@ -1063,6 +1064,7 @@ class MeetupWhole(Meetup):
         :param verbose: whether display the step
         :return: DataFrame,contains all egos' info
         """
+        
         ego_alters = [self._ego_alter(ego, verbose) for ego in self.egolist]
 
         self.ego_stats = pd.DataFrame(ego_alters, columns=['ego', 'ego_info',
@@ -1084,6 +1086,7 @@ class MeetupWhole(Meetup):
         :param gender_path: string, the gender dataset path
         :return: DataFrame, contains all egos's info including gender
         """
+        
         if self.ego_stats is None:
             print('Generating ego info now, please wait')
             self.ego_info(verbose=True)
@@ -1114,29 +1117,29 @@ class MeetupWhole(Meetup):
         return ego_gender
 
 
-class MeetupGender(MeetupOneByOne, MeetupWhole):
+class MeetupGender(MeetupWhole):
     """
     Meetup Strategy focusing on Gender aspect
     """
+    
 
     def __init__(self, path, gender_path, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 n_meetupers=None, n_previous=200,
+                 n_previous=200,
                  user_meetup=None, total_meetup=None, placeidT=None):
         """
         All inputs are from the father class MeetupWhole and MeetupOneByOne
         """
-        super(MeetupGender, self).__init__(path=path, mins_records=mins_records, geoid=geoid,
-                                           resolution=resolution, epsilon=epsilon,
-                                           n_meetupers=n_meetupers, n_previous=n_previous,
-                                           user_meetup=user_meetup,
-                                           total_meetup=total_meetup,
-                                           placeidT=placeidT)
-
+        super(MeetupGender, self).__init__(path, mins_records, geoid, resolution, epsilon,
+                                           n_previous,
+                                           user_meetup,
+                                           total_meetup,
+                                           placeidT)
+        
         meetup_gender = self._gender_info(gender_path)
+        
         # remove all unknown points
         meetup_gender = meetup_gender.replace(['male', 'female', 'mostly_male', 'mostly_female'],
                                               ['M', 'F', 'AM', 'AF'])
-
         self.user_meetup = meetup_gender[~((meetup_gender['Gender_Guesser_x'].isin(['unknown', 'andy'])) |
                                            (meetup_gender['Gender_Guesser_y'].isin(['unknown', 'andy'])))]
         self.user_stats_M = None
@@ -1193,7 +1196,7 @@ class MeetupGender(MeetupOneByOne, MeetupWhole):
         if gender is 'gender':
             meetupers = self.user_meetup
         else:
-            meetupers = self.user_meetup[self.user_meetup['Gender_Guessor_y'].isin(gender)]
+            meetupers = self.user_meetup[self.user_meetup['Gender_Guesser_y'].isin(gender)]
 
         egolist = sorted(list(set(meetupers['userid_x'].tolist())))
         meetup_list = [self._ego_meetup(ego, meetupers, egoshow=verbose)
@@ -1209,3 +1212,103 @@ class MeetupGender(MeetupOneByOne, MeetupWhole):
             user_stats.to_csv(name, index=False)
 
         return user_stats
+
+    def _cross_entropy_pair(self, ego_time, ego_placeid, ego_L, alter, alters,
+                            L, wb, length_alters, temp_shuffle=False):
+        """ Protected method (recursive structure): compute cross entropy related to statistics
+        Args:
+            ego_time: datetime,
+            ego_placeid: list,
+            ego_L: list, match length for ego
+            alter: string, selected alter
+            alters: string list, all the alters for ego
+            L: nested list, match legnths for all alters before the selected alter
+            wb: list, weights for for all alters before the selected alter
+            length_alters: list, length of visited placeids for all alters before the selected alter
+            temp_shuffle: bool, whether do shuffle for alter's placeid series
+
+        Return:
+            alter related information
+        """
+        length_ego = len(ego_placeid)
+        # length of unique placeid
+        length_ego_uni = len(set(ego_placeid))
+        alterid = alters.index(alter)
+
+        # included rank is j+1
+        rank = alterid + 1
+
+        alter_time, length_alter_uniq, length_alter, alter_placeid = self._extract_info(alter)
+        """ Temporal control: given ego, we can find alters, for each alter, we shuffle the sequence of 
+        placeid as random """
+        if temp_shuffle:
+            random.shuffle(alter_placeid)
+
+        alter_log2 = np.log2(length_alter_uniq)
+        """Be careful: W1 in cross_entropy is B in the paper, W2 is cross_entropy is A in the paper """
+        # so we need to get the relative time order of ego in alter (abosulte position of ego+alter)
+        # for function cross_entropy, we need to have PTs
+        # here we use LZ-cross entropy, which requires the length at least self.epsilon
+        total_time = sorted(ego_time + alter_time)
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
+
+        """ function cross_entropy can return L, as defintion of cumulative cross entropy, we need to get max """
+        # compute cross entropy with only this alter
+        # Obtain the basic information to extend L, wb, length_alters
+        # obtain the cross-parsed match length for this ego-alter pair
+        L[alterid] = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                           lambdas=True, e=self.epsilon)
+        wb[alterid] = self.weight(ego_L, L[alterid])
+        # length of alter placeid
+        # #length_alters[alterid] = length_alter
+        # use length_former to get valid length of alter
+        length_alters[alterid] = self._length_former(ego_time, alter_time)
+
+        """ For alter"""
+        if wb[alterid] == 0:
+            CE_alter, Pi_alter = np.nan, np.nan
+        else:
+            CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
+                                                             [L[alterid]], length_alters[alterid])
+
+        """ For all above alters """
+        # for alters: top above all alters
+        alters_L = L[:alterid + 1]
+        alters_length = length_alters[:alterid + 1]
+        wb_length = wb[:alterid + 1]
+        # average lengths
+        ave_length = self._ave(alters_length, wb_length)
+        # CCE for all above alters
+        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+                                                            alters_L, ave_length)
+        """For only this alter + ego"""
+        # for only this alter and ego
+        ego_alter_L = [ego_L, L[alterid]]
+        bi_length = np.array([length_alters[alterid], length_ego], dtype=np.float64)
+        bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
+        ave_length = self._ave(bi_length, bi_weight)
+        CCE_ego_alter, Pi_ego_alter = self.entropy_predictability(length_ego_uni,
+                                                                  length_ego,
+                                                                  ego_alter_L,
+                                                                  ave_length)
+        """For all above alters + ego"""
+        # for ego+alters: top above all alters + ego
+        alters_L.append(ego_L)
+        alters_length.append(length_ego)
+        ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
+        ave_length = self._ave(alters_length, ego_alters_weight)
+        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+                                                                    length_ego,
+                                                                    alters_L,
+                                                                    ave_length)
+
+        """ classify alters as helpful and useless"""
+        if CE_alter < np.log2(length_ego_uni):
+            group = 'helpful'
+        else:
+            group = 'useless'
+
+        return [alter, group, rank, wb[alterid], alter_log2,
+                CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
+                Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
+                ]
