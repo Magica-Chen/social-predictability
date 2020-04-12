@@ -303,12 +303,13 @@ class MeetupOneByOne(Meetup):
         super(MeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
         if total_meetup is not None:
             self.total_meetup = total_meetup
-
+            
+        self.n_meetupers = n_meetupers
+        
         if user_meetup is None:
             self.user_meetup = self.meetup_filter(n_meetupers=n_meetupers, n_previous=n_previous)
         else:
             self.user_meetup = user_meetup
-            self.n_meetupers = n_meetupers
             # if user_meetup is given directly rather than generating automatically, we have to update egolist,
             # alterlist, userlist and pdata.
             self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
