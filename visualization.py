@@ -151,7 +151,7 @@ def paper_interaction(user_stats, aspect='alter', threshold=None, interval=None,
     ax1.set_rasterized(True)
 
     sns.distplot(iterim[iterim['count'] <= threshold]['count'], bins=n_bins, kde=False, ax=ax2)
-    x_name = 'Number of meetupers of '+ aspect
+    x_name = 'Number of meetupers of ' + aspect
     ax2.set(xlabel=x_name, ylabel='Count')
 
     fig.tight_layout()
@@ -162,9 +162,11 @@ def paper_interaction(user_stats, aspect='alter', threshold=None, interval=None,
         fig.savefig(title, bbox_inches='tight')
 
 
-def num_point_plot(user_stats, name, threshold=None, interval=None, l=15, w=6, mode='talk',
+def num_point_plot(user_stats, name, threshold=None, partition=False,
+                   interval=None, l=15, w=6, mode='talk',
                    control=False, figsave=False, format='eps'):
     """ number of included alters vs entropy or predictability
+    :param partition: whether divided into two part of dataset
     :param user_stats: result dataset
     :param name: string, currently only accept 'entropy' or 'predictability'
     :param threshold: int, the largest number of alters included
@@ -193,16 +195,25 @@ def num_point_plot(user_stats, name, threshold=None, interval=None, l=15, w=6, m
             CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
                           'Alters + ego (TC)', 'Alters only (TC)',
                           'Alters + ego (SC)', 'Alters only (SC)']
-            if threshold is None:
-                threshold = len(set(user_stats['Included Rank'].tolist()))
+
+        elif partition:
+            CCE = pd.melt(user_stats, id_vars=['Included Rank', 'group'],
+                          value_vars=['CCE_ego_alters', 'CCE_alters'],
+                          var_name='CCE')
+            CCE['CCE'] = CCE.apply(lambda row: row.CCE[4:] + '_' + row.group, axis=1)
+            good = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'helpful')]['LZ_entropy']
+            bad = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'useless')]['LZ_entropy']
+            baseline = [good.mean(), bad.mean()]
+            CCE_legend = ['Ego only (helpful)', 'Ego only (helpful)',
+                          'Alters (helpful) + ego', 'Alters (useless) + ego',
+                          'Alters (helpful) only', 'Alters (useless) only']
+
         else:
             CCE = pd.melt(user_stats, id_vars=['Included Rank'],
                           value_vars=['CCE_ego_alters', 'CCE_alters'],
                           var_name='CCE')
             baseline = user_stats[user_stats['Included Rank'] == 1]['LZ_entropy'].mean()
             CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
-            if threshold is None:
-                threshold = len(set(user_stats['Included Rank'].tolist()))
 
     elif name is 'predictability':
         if control:
@@ -216,25 +227,40 @@ def num_point_plot(user_stats, name, threshold=None, interval=None, l=15, w=6, m
             CCE_legend = ['Ego only', 'Alters + ego', 'Alters only',
                           'Alters + ego (TC)', 'Alters only (TC)',
                           'Alters + ego (SC)', 'Alters only (SC)']
-            if threshold is None:
-                threshold = len(set(user_stats['Included Rank'].tolist()))
 
+        elif partition:
+            CCE = pd.melt(user_stats, id_vars=['Included Rank', 'group'],
+                          value_vars=['Pi_ego_alters', 'Pi_alters'],
+                          var_name='CCE')
+            CCE['CCE'] = CCE.apply(lambda row: row.CCE[4:] + '_' + row.group, axis=1)
+            good = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'helpful')]['Pi']
+            bad = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'useless')]['Pi']
+            baseline = [good.mean(), bad.mean()]
+            CCE_legend = ['Ego only (helpful)', 'Ego only (helpful)',
+                          'Alters (helpful) + ego', 'Alters (useless) + ego',
+                          'Alters (helpful) only', 'Alters (useless) only']
         else:
             CCE = pd.melt(user_stats, id_vars=['Included Rank'],
                           value_vars=['Pi_ego_alters', 'Pi_alters'],
                           var_name='CCE')
             baseline = user_stats[user_stats['Included Rank'] == 1]['Pi'].mean()
             CCE_legend = ['Ego only', 'Alters + ego', 'Alters only']
-            if threshold is None:
-                threshold = len(set(user_stats['Included Rank'].tolist()))
 
     else:
         raise ValueError('Only available for entropy and predictability')
 
+    if threshold is None:
+        threshold = len(set(user_stats['Included Rank'].tolist()))
+
     sns.pointplot(x="Included Rank", y="value", hue='CCE',
                   data=CCE[CCE['Included Rank'] <= threshold],
                   ci=95, join=False, ax=ax)
-    ax.axhline(y=baseline, color='black', linestyle='--', label='Ego')
+    if not partition:
+        ax.axhline(y=baseline, color='red', linestyle='--', label='Ego')
+    else:
+        ax.axhline(y=baseline[0], color='black', linestyle='--', label='Ego (helpful alters) only')
+        ax.axhline(y=baseline[1], color='red', linestyle='--', label='Ego (useless alters) only')
+
     leg_handles = ax.get_legend_handles_labels()[0]
 
     if interval is None:
