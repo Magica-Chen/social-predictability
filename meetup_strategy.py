@@ -96,7 +96,6 @@ class Meetup(object):
         alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         meetup['N_previous'] = np.array(alters_former)
         meetup['N_alter'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
-        print(ego)
 
         return meetup
 
@@ -106,7 +105,10 @@ class Meetup(object):
         """
         meetup_list = [self.find_meetup(user) for user in self.userlist]
         user_meetup = pd.concat(meetup_list, sort=False)
-        self.total_meetup = user_meetup.rename(columns={'count': 'meetup'})
+        user_meetup = user_meetup.rename(columns={'count': 'meetup'})
+        n_user_meetup = user_meetup.groupby('userid_x').size().reset_index(name='count')
+        n_user_meetup.columns = ['userid_y', 'n_alter_meetupers']
+        self.total_meetup = user_meetup.merge(n_user_meetup, how='left', on='userid_y')
 
         return self.total_meetup
 
@@ -562,6 +564,7 @@ class MeetupOneByOne(Meetup):
             # combine two parts of meetup information
             df_ego_meetup = self.user_meetup[self.user_meetup['userid_x'] == ego]
             meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
+            meetup_ego['n_meetupers'] = N_alters
 
         if tempsave:
             meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
@@ -644,6 +647,7 @@ class MeetupOneByOne(Meetup):
         if self.user_stats is not None:
             df_alters = pd.concat([self.user_stats[self.user_stats['userid_x'] == ego].
                                   tail(1)[['userid_x',
+                                           'n_meetupers',
                                            'CCE_alters',
                                            'CCE_ego_alters',
                                            'Pi_alters',
@@ -1150,7 +1154,7 @@ class MeetupGender(MeetupWhole):
         self.user_stats_AM_AF = None
         self.user_stats_gender = None
 
-    def _ego_meetup(self, ego, meetupers, egoshow=False, gender='gender'):
+    def _ego_meetup(self, ego, meetupers, egoshow=False):
 
         # extraact information of ego and compute all the statistics for all egos
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
