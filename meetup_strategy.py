@@ -1146,18 +1146,16 @@ class MeetupGender(MeetupWhole):
                                               ['M', 'F', 'AM', 'AF'])
         self.user_meetup = meetup_gender[~((meetup_gender['Gender_Guesser_x'].isin(['unknown', 'andy'])) |
                                            (meetup_gender['Gender_Guesser_y'].isin(['unknown', 'andy'])))]
-        self.user_stats_M = None
-        self.user_stats_F = None
-        self.user_stats_M_F = None
-        self.user_stats_AM = None
-        self.user_stats_AF = None
-        self.user_stats_AM_AF = None
-        self.user_stats_gender = None
+        self.user_stats = {}
 
     def _ego_meetup(self, ego, meetupers, egoshow=False):
 
         # extraact information of ego and compute all the statistics for all egos
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+        # obtain ego info
+        ego_info = np.log2(length_ego_uni)
+        ego_LZ_entropy = util.LZ_entropy(ego_placeid, e=self.epsilon)
+        Pi_ego = util.getPredictability(length_ego_uni, ego_LZ_entropy, e=self.epsilon)
 
         # obtain the alters for ego
         alters = meetupers[meetupers['userid_x'] == ego]['userid_y'].tolist()
@@ -1182,6 +1180,9 @@ class MeetupGender(MeetupWhole):
         df_ego_meetup = meetupers[meetupers['userid_x'] == ego]
         meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
         meetup_ego['n_meetupers'] = N_alters
+        meetup_ego['ego_info'] = ego_info
+        meetup_ego['LZ_entropy'] = ego_LZ_entropy
+        meetup_ego['Pi'] = Pi_ego
 
         if egoshow:
             print(ego)
@@ -1209,7 +1210,7 @@ class MeetupGender(MeetupWhole):
         user_stats = pd.concat(meetup_list, sort=False)
 
         name = '_'.join(map(str, gender))
-        locals()['self.user_stats_' + name] = user_stats
+        self.user_stats.update({name: user_stats})
 
         # save the file
         if filesave:
