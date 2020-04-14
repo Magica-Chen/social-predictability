@@ -204,7 +204,7 @@ def num_point_plot(user_stats, name, threshold=None, partition=False,
             good = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'helpful')]['LZ_entropy']
             bad = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'useless')]['LZ_entropy']
             baseline = [good.mean(), bad.mean()]
-            CCE_legend = ['Ego only (helpful)', 'Ego only (helpful)',
+            CCE_legend = ['Ego only (helpful)', 'Ego only (useless)',
                           'Alters (helpful) + ego', 'Alters (useless) + ego',
                           'Alters (helpful) only', 'Alters (useless) only']
 
@@ -236,7 +236,7 @@ def num_point_plot(user_stats, name, threshold=None, partition=False,
             good = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'helpful')]['Pi']
             bad = user_stats[(user_stats['Included Rank'] == 1) & (user_stats['group'] == 'useless')]['Pi']
             baseline = [good.mean(), bad.mean()]
-            CCE_legend = ['Ego only (helpful)', 'Ego only (helpful)',
+            CCE_legend = ['Ego only (helpful)', 'Ego only (useless)',
                           'Alters (helpful) + ego', 'Alters (useless) + ego',
                           'Alters (helpful) only', 'Alters (useless) only']
         else:
