@@ -1188,20 +1188,21 @@ class MeetupGender(MeetupWhole):
             print(ego)
         return meetup_ego
 
-    def ego_alter_info(self, filesave=False, verbose=False, gender='gender'):
+    def ego_alter_info(self, filesave=False, verbose=False, gender=False):
         """ Produce all the ego-alter information
         Args:
             filesave: bool, whether save the file to csv file
             verbose: bool, whether print the ego in step
-            gender: string or list of string.
+            gender: string or list of string. Default is False, using all info
         Return:
             user_stats, and also add to the class self oject, self.user_stats
         """
-        if not isinstance(gender, list):
-            gender = [gender]
-        if gender is 'gender':
+        if not gender:
             meetupers = self.user_meetup
+            gender = 'all'
         else:
+            if not isinstance(gender, list):
+                gender = [gender]
             meetupers = self.user_meetup[self.user_meetup['Gender_Guesser_y'].isin(gender)]
 
         egolist = sorted(list(set(meetupers['userid_x'].tolist())))
