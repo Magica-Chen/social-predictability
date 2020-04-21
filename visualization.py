@@ -25,8 +25,8 @@ def hist_entropy(user_stats, l=12, w=6, n_bins=100, mode='talk'):
     LZentropy = user_stats[user_stats['Included Rank'] == 1]['LZ_entropy'].dropna()
     CrossEntropy = user_stats['CE_alter'].dropna()
     CrossEntropyEgo = user_stats['CCE_ego_alter'].dropna()
-    CumCrossEntropy = user_stats[user_stats['Included Rank'] == 1]['CCE_alters'].dropna()
-    CumCrossEntropyEgo = user_stats[user_stats['Included Rank'] == 1]['CCE_ego_alters'].dropna()
+    CumCrossEntropy = user_stats.groupby('userid_x').tail(1)['CCE_alters'].dropna()
+    CumCrossEntropyEgo = user_stats.groupby('userid_x').tail(1)['CCE_ego_alters'].dropna()
 
     fig, ax = plt.subplots(figsize=(l, w))
     sns.set_context(mode)
@@ -54,8 +54,8 @@ def hist_pred(user_stats, l=12, w=6, n_bins=100, mode='talk'):
     pred = user_stats[user_stats['Included Rank'] == 1]['Pi'].dropna()
     pred_alter = user_stats['Pi_alter'].dropna()
     pred_alter_ego = user_stats['Pi_ego_alter'].dropna()
-    pred_alters = user_stats[user_stats['Included Rank'] == 1]['Pi_alters'].dropna()
-    pred_alters_ego = user_stats[user_stats['Included Rank'] == 1]['Pi_ego_alters'].dropna()
+    pred_alters = user_stats.groupby('userid_x').tail(1)['Pi_alters'].dropna()
+    pred_alters_ego = user_stats.groupby('userid_x').tail(1)['Pi_ego_alters'].dropna()
 
     fig, ax = plt.subplots(figsize=(l, w))
     sns.set_context(mode)

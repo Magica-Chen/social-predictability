@@ -1199,7 +1199,7 @@ class MeetupGender(MeetupWhole):
         """
         if not gender:
             meetupers = self.user_meetup
-            gender = 'all'
+            gender = 'all-gender'
         else:
             if not isinstance(gender, list):
                 gender = [gender]
