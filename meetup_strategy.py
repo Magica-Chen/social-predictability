@@ -692,25 +692,26 @@ class MeetupOneByOne(Meetup):
 
         return self.ego_stats, self.tr_ego_stats, self.sr_ego_stats
 
-    def merge_stats(self, filesave=False):
+    def merge_stats(self, control=False, filesave=False):
         """merge all user-stats and ego-stats if they exist
         Args:
             filesave: whether save the final merged file
-
+            control: whether have temporal and social control
         Return:
             ego+alters all information
         """
-        if all(v is not None for v in [self.user_stats, self.ego_stats]):
-            ego_alter_stats = self.user_stats.merge(self.ego_stats.copy().drop(columns=['CCE_alters', 'CCE_ego_alters',
-                                                                                        'Pi_alters', 'Pi_ego_alters']),
-                                                    how='left', on=['userid_x'])
-            if filesave:
-                name = 'user-meetup-all-' + str(self.n_meetupers) + '.csv'
-                ego_alter_stats.to_csv(name, index=False)
+        if not control:
+            if all(v is not None for v in [self.user_stats, self.ego_stats]):
+                ego_alter_stats = self.user_stats.merge(self.ego_stats.copy().drop(columns=['CCE_alters', 'CCE_ego_alters',
+                                                                                            'Pi_alters', 'Pi_ego_alters']),
+                                                        how='left', on=['userid_x'])
+                if filesave:
+                    name = 'user-meetup-all-' + str(self.n_meetupers) + '.csv'
+                    ego_alter_stats.to_csv(name, index=False)
 
-            return ego_alter_stats
+                return ego_alter_stats
 
-        if all(v is not None for v in [self.user_stats, self.tr_user_stats, self.sr_user_stats]):
+        elif all(v is not None for v in [self.user_stats, self.tr_user_stats, self.sr_user_stats]):
             left = self.user_stats.merge(self.tr_user_stats, on=['userid_x',
                                                                  'userid_y']
                                          ).drop(columns=['userid_y']).reset_index(drop=True)
@@ -723,15 +724,15 @@ class MeetupOneByOne(Meetup):
                 name = 'user-meetup-info-all-' + str(self.n_meetupers) + '.csv'
                 self.user_stats_all.to_csv(name, index=False)
 
-        if all(v is not None for v in [self.ego_stats, self.tr_ego_stats, self.sr_ego_stats]):
-            self.ego_stats_all = self.ego_stats.merge(self.tr_ego_stats, on=['userid_x',
-                                                                             'ego_info',
-                                                                             'LZ_entropy',
-                                                                             'Pi']).merge(
-                self.sr_ego_stats, on=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
-            if filesave:
-                name = 'user-ego-info-all-' + str(self.n_meetupers) + '.csv'
-                self.ego_stats_all.to_csv(name, index=False)
+            if all(v is not None for v in [self.ego_stats, self.tr_ego_stats, self.sr_ego_stats]):
+                self.ego_stats_all = self.ego_stats.merge(self.tr_ego_stats, on=['userid_x',
+                                                                                 'ego_info',
+                                                                                 'LZ_entropy',
+                                                                                 'Pi']).merge(
+                    self.sr_ego_stats, on=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
+                if filesave:
+                    name = 'user-ego-info-all-' + str(self.n_meetupers) + '.csv'
+                    self.ego_stats_all.to_csv(name, index=False)
 
     def hist_entropy(self, l=12, w=6, n_bins=100, mode='talk'):
         """ Histogram plot for entropy and more

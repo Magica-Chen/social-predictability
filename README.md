@@ -49,18 +49,18 @@ user_placeidT = LetMeet.temporal_placeid()
 4. Define a meetup strategy class
 
 ```python
-GoMeet = ms.MeetupStrategy(path='data/weeplace_checkins.csv', user_meetup=user_meetup, placeidT=user_placeidT)
+GoMeet = ms.MeetupOneByOne(path='data/weeplace_checkins.csv', user_meetup=user_meetup, placeidT=user_placeidT)
 # or using geo-coordinates
-# GoMeet = ms.MeetupStrategy(path='data/weeplace_checkins.csv', geoid=True, user_meetup=user_meetup, placeidT=user_placeidT)
+# GoMeet = ms.MeetupOneByOne(path='data/weeplace_checkins.csv', geoid=True, user_meetup=user_meetup, placeidT=user_placeidT)
 ```
 
-In fact, you can define a MeetupStrategy directly by,
+In fact, you can define a MeetupOneByOne directly by,
 
 ```python
-GoMeet = ms.MeetupStrategy(path='data/weeplace_checkins.csv')
+GoMeet = ms.MeetupOneByOne(path='data/weeplace_checkins.csv')
 ```
 
-The reason why I suggest you define a meetup class first is that finding all the meetup information for this example dataset is very slow (for my personal laptop, it takes approximate 19 hours) . If you import meetup information and temporal information, it will reduce a large amount of time when initialising this MeetupStrategy.
+The reason why I suggest you define a meetup class first is that finding all the meetup information for this example dataset is very slow (for my personal laptop, it takes approximate 19 hours) . If you import meetup information and temporal information, it will reduce a large amount of time when initialising this MeetupOneByOne.
 
 5. Obtain all the statistics from the view of information theory
 
