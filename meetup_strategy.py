@@ -734,6 +734,32 @@ class MeetupOneByOne(Meetup):
                     name = 'user-ego-info-all-' + str(self.n_meetupers) + '.csv'
                     self.ego_stats_all.to_csv(name, index=False)
 
+    def find_meetup_details(self, ego):
+        """ Find all the meetups for ego
+        :param ego: string, ego's userid
+        :return: dataframe, filled with meetup information
+        """
+        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
+        alterlist = list(set(self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()))
+
+        df_alters = self.pdata[self.pdata['userid'].isin(alterlist)][
+            ['userid', 'placeid', 'datetimeH']]
+
+        """ Here meetup means two users appear in the same placeid at the same time, so we merge two 
+        dataframes, keep on placeid and datatime, if they meet, it will be complete row record, 
+        otherwise, the record should have NaN. Therefore, we remove all the records with NaN and we
+        can have all the meetup information.
+        """
+        meetup = df_ego.merge(df_alters, how='left', on=['placeid', 'datetimeH']) \
+            .dropna()[['userid_x', 'placeid', 'datetimeH', 'userid_y']] \
+            .drop_duplicates()
+
+        return meetup
+
+    @property
+    def meetup_details(self):
+        return pd.concat([self.find_meetup_details(ego) for ego in self.egolist])
+
     def hist_entropy(self, l=12, w=6, n_bins=100, mode='talk'):
         """ Histogram plot for entropy and more
         :param l: int, long
