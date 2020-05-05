@@ -1368,6 +1368,13 @@ class MeetupCrossValid(MeetupWhole):
                                                placeidT)
         self.cross_info = None
 
+    def _submeetup(self, n_meetupers=10):
+        whole_meetup= self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(
+            name='n_meetupers').merge(self.user_meetup, how='right', on='userid_x')
+        self.user_meetup = whole_meetup[whole_meetup['n_meetupers'] == n_meetupers]
+        self.egolist = list(set(self.user_meetup['userid_x'].tolist()))
+        return self.egolist
+
     def ego_info(self, n_shown=10, verbose=False, filesave=False):
         """
         Combine all egos and all time delays as a dataframe
@@ -1376,8 +1383,10 @@ class MeetupCrossValid(MeetupWhole):
         :param verbose: whether display the step
         :return: DataFrame,contains all egos' info
         """
+        if n_shown:
+            print(self._submeetup(n_shown))
 
-        ego_alters = pd.concat([self._ego_alter(ego, n_shown, verbose) for ego in self.egolist])
+        ego_alters = pd.concat([self._ego_alter(ego, verbose) for ego in self.egolist])
         self.cross_info = ego_alters
 
         if filesave:
@@ -1386,11 +1395,10 @@ class MeetupCrossValid(MeetupWhole):
 
         return self.cross_info
 
-    def _ego_alter(self, ego, n_shown=10, egoshow=False):
+    def _ego_alter(self, ego, egoshow=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
-        :param n_shown: the number of ego is shown
         :param egoshow: whether print ego
         :return: CCE and Predictability for alters only and ego+alters case
         """
@@ -1410,8 +1418,6 @@ class MeetupCrossValid(MeetupWhole):
 
         """alters only"""
         """ Here we generate a combinations of included alters"""
-        if bool(n_shown) & (n_shown < n_meetupers):
-            n_meetupers = n_shown
 
         CCE_Pi = [self._CCE_Pi(n_included, alters, ego_time, ego_placeid, ego_L,
                                length_ego_uni, length_ego) for n_included in range(1, n_meetupers + 1)
