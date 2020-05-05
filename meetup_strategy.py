@@ -14,6 +14,7 @@ import random
 from datetime import timedelta
 from preprocessing import geo2id, pre_processing
 import util
+from itertools import combinations
 
 SEED = 2020  # set random seed for our random function
 
@@ -305,9 +306,9 @@ class MeetupOneByOne(Meetup):
         super(MeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
         if total_meetup is not None:
             self.total_meetup = total_meetup
-            
+
         self.n_meetupers = n_meetupers
-        
+
         if user_meetup is None:
             self.user_meetup = self.meetup_filter(n_meetupers=n_meetupers, n_previous=n_previous)
         else:
@@ -702,9 +703,10 @@ class MeetupOneByOne(Meetup):
         """
         if not control:
             if all(v is not None for v in [self.user_stats, self.ego_stats]):
-                ego_alter_stats = self.user_stats.merge(self.ego_stats.copy().drop(columns=['CCE_alters', 'CCE_ego_alters',
-                                                                                            'Pi_alters', 'Pi_ego_alters']),
-                                                        how='left', on=['userid_x'])
+                ego_alter_stats = self.user_stats.merge(
+                    self.ego_stats.copy().drop(columns=['CCE_alters', 'CCE_ego_alters',
+                                                        'Pi_alters', 'Pi_ego_alters']),
+                    how='left', on=['userid_x'])
                 if filesave:
                     name = 'user-meetup-all-' + str(self.n_meetupers) + '.csv'
                     ego_alter_stats.to_csv(name, index=False)
@@ -1009,7 +1011,7 @@ class MeetupWhole(Meetup):
         :param total_meetup: DataFrame, the whole meetupers network
         :param placeidT: Dict, indexed by ego id and contains all temporal visitations
         """
-        
+
         super(MeetupWhole, self).__init__(path, mins_records, geoid, resolution, epsilon)
         self.ego_stats = None
         self.ego_stats_gender = None
@@ -1070,7 +1072,7 @@ class MeetupWhole(Meetup):
         ave_length = self._ave(alters_length, wb_length)
         weighted_ave_len = ave_length
         CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
-                                                            alters_L, ave_length)
+                                                            alters_L, weighted_ave_len)
         """alters + ego"""
         alters_L.append(ego_L)
         alters_length.append(length_ego)
@@ -1096,7 +1098,7 @@ class MeetupWhole(Meetup):
         :param verbose: whether display the step
         :return: DataFrame,contains all egos' info
         """
-        
+
         ego_alters = [self._ego_alter(ego, verbose) for ego in self.egolist]
 
         self.ego_stats = pd.DataFrame(ego_alters, columns=['ego', 'ego_info',
@@ -1118,7 +1120,7 @@ class MeetupWhole(Meetup):
         :param gender_path: string, the gender dataset path
         :return: DataFrame, contains all egos's info including gender
         """
-        
+
         if self.ego_stats is None:
             print('Generating ego info now, please wait')
             self.ego_info(verbose=True)
@@ -1165,9 +1167,9 @@ class MeetupGender(MeetupWhole):
                                            user_meetup,
                                            total_meetup,
                                            placeidT)
-        
+
         meetup_gender = self._gender_info(gender_path)
-        
+
         # remove all unknown points
         meetup_gender = meetup_gender.replace(['male', 'female', 'mostly_male', 'mostly_female'],
                                               ['M', 'F', 'AM', 'AF'])
@@ -1346,3 +1348,102 @@ class MeetupGender(MeetupWhole):
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
+
+
+class MeetupCrossValid(MeetupWhole):
+    """
+    Meetup Strategy focusing on adding alters by cross-validation
+    """
+
+    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 n_previous=200,
+                 user_meetup=None, total_meetup=None, placeidT=None):
+        """
+        All inputs are from the father class MeetupWhole and MeetupOneByOne
+        """
+        super(MeetupCrossValid, self).__init__(path, mins_records, geoid, resolution, epsilon,
+                                               n_previous,
+                                               user_meetup,
+                                               total_meetup,
+                                               placeidT)
+        self.cross_info = None
+
+    def ego_info(self, verbose=False, filesave=False):
+        """
+        Combine all egos and all time delays as a dataframe
+        :param filesave: whether save the results in csv file
+        :param verbose: whether display the step
+        :return: DataFrame,contains all egos' info
+        """
+
+        ego_alters = pd.concat([self._ego_alter(ego, verbose) for ego in self.egolist])
+        self.cross_info = ego_alters
+
+        if filesave:
+            name = 'MeetupCrossValidation.csv'
+            self.cross_info.to_csv(name, index=False)
+
+        return self.cross_info
+
+    def _ego_alter(self, ego, egoshow=False):
+        """
+        extract information of ego and compute all the statistics
+        :param ego: userid of ego
+        :param egoshow: whether print ego
+        :return: CCE and Predictability for alters only and ego+alters case
+        """
+
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
+        n_meetupers = len(total_alters)
+
+        """ego only"""
+        total_time = sorted(ego_time + ego_time)
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
+
+        CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = util.getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
+
+        """alters only"""
+        """ Here we generate a combinations of included alters"""
+        CCE_Pi = [self._CCE_Pi(n_included, alters, ego_time, ego_placeid, ego_L,
+                               length_ego_uni, length_ego) for n_included in range(1, n_meetupers + 1)
+                  for alters in combinations(total_alters, n_included)]
+
+        CCE_Pi = pd.DataFrame(CCE_Pi, columns=['Included',
+                                               'CCE_alters', 'CCE_ego_alters',
+                                               'Pi_alters', 'Pi_ego_alters']
+                              )
+        CCE_Pi['Pi_alters_ratio'] = CCE_Pi['Pi_alters_ratio'] / Pi_ego
+        CCE_Pi['Pi_ego_alters_ratio'] = CCE_Pi['Pi_ego_alters_ratio'] / Pi_ego
+        CCE_Pi['userid'] = ego
+
+        if egoshow:
+            print(ego)
+
+        return CCE_Pi
+
+    def _CCE_Pi(self, n_included, alters, ego_time, ego_placeid, ego_L,
+                length_ego_uni, length_ego):
+        """ alters only"""
+        alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
+                                                                                   ego_placeid,
+                                                                                   ego_L,
+                                                                                   alter)
+                                                             for alter in alters]))
+        ave_length = self._ave(alters_length, wb_length)
+        weighted_ave_len = ave_length
+        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
+                                                            alters_L, weighted_ave_len)
+        """alters + ego"""
+        alters_L.append(ego_L)
+        alters_length.append(length_ego)
+        ego_alters_weight = wb_length + [self.weight(ego_L)]
+        ave_length = self._ave(alters_length, ego_alters_weight)
+        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
+                                                                    length_ego,
+                                                                    alters_L,
+                                                                    ave_length)
+        return [n_included, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
