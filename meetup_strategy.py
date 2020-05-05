@@ -1386,11 +1386,12 @@ class MeetupCrossValid(MeetupWhole):
 
         return self.cross_info
 
-    def _ego_alter(self, ego, n_shown=10, egoshow=False):
+    def _ego_alter(self, ego, n_shown=10, more= False, egoshow=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
         :param n_shown: the number of ego is shown
+        :param whether consider more than n_shown users
         :param egoshow: whether print ego
         :return: CCE and Predictability for alters only and ego+alters case
         """
@@ -1398,7 +1399,6 @@ class MeetupCrossValid(MeetupWhole):
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
 
         ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
-        total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
 
         """ego only"""
         total_time = sorted(ego_time + ego_time)
@@ -1410,8 +1410,17 @@ class MeetupCrossValid(MeetupWhole):
         """alters only"""
         """ Here we generate a combinations of included alters"""
         if n_shown:
+            full_meetup = self.user_meetup.groupby('userid_x').size().reset_index(name='n_meetupers').merge(
+                self.user_meetup, how='right', on='userid_x')
+            if more:
+                total_alters = full_meetup[(full_meetup['n_meetupers'] >= n_shown) & (full_meetup['userid_x'] == ego
+                                                                                      )]['userid_y'].tolist()
+            else:
+                total_alters = full_meetup[(full_meetup['n_meetupers'] == n_shown) & (full_meetup['userid_x'] == ego
+                                                                                      )]['userid_y'].tolist()
             n_meetupers = n_shown
         else:
+            total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
             n_meetupers = len(total_alters)
 
         CCE_Pi = [self._CCE_Pi(n_included, alters, ego_time, ego_placeid, ego_L,
