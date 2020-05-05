@@ -1368,15 +1368,16 @@ class MeetupCrossValid(MeetupWhole):
                                                placeidT)
         self.cross_info = None
 
-    def ego_info(self, verbose=False, filesave=False):
+    def ego_info(self, n_shown=10, verbose=False, filesave=False):
         """
         Combine all egos and all time delays as a dataframe
+        :param n_shown: just show n_shown included alters
         :param filesave: whether save the results in csv file
         :param verbose: whether display the step
         :return: DataFrame,contains all egos' info
         """
 
-        ego_alters = pd.concat([self._ego_alter(ego, verbose) for ego in self.egolist])
+        ego_alters = pd.concat([self._ego_alter(ego, n_shown, verbose) for ego in self.egolist])
         self.cross_info = ego_alters
 
         if filesave:
@@ -1385,10 +1386,11 @@ class MeetupCrossValid(MeetupWhole):
 
         return self.cross_info
 
-    def _ego_alter(self, ego, egoshow=False):
+    def _ego_alter(self, ego, n_shown=10, egoshow=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
+        :param n_shown: the number of ego is shown
         :param egoshow: whether print ego
         :return: CCE and Predictability for alters only and ego+alters case
         """
@@ -1397,7 +1399,6 @@ class MeetupCrossValid(MeetupWhole):
 
         ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
-        n_meetupers = len(total_alters)
 
         """ego only"""
         total_time = sorted(ego_time + ego_time)
@@ -1408,6 +1409,11 @@ class MeetupCrossValid(MeetupWhole):
 
         """alters only"""
         """ Here we generate a combinations of included alters"""
+        if n_shown:
+            n_meetupers = n_shown
+        else:
+            n_meetupers = len(total_alters)
+
         CCE_Pi = [self._CCE_Pi(n_included, alters, ego_time, ego_placeid, ego_L,
                                length_ego_uni, length_ego) for n_included in range(1, n_meetupers + 1)
                   for alters in combinations(total_alters, n_included)]
