@@ -1416,8 +1416,8 @@ class MeetupCrossValid(MeetupWhole):
                                                'CCE_alters', 'CCE_ego_alters',
                                                'Pi_alters', 'Pi_ego_alters']
                               )
-        CCE_Pi['Pi_alters_ratio'] = CCE_Pi['Pi_alters_ratio'] / Pi_ego
-        CCE_Pi['Pi_ego_alters_ratio'] = CCE_Pi['Pi_ego_alters_ratio'] / Pi_ego
+        CCE_Pi['Pi_alters_ratio'] = CCE_Pi['Pi_alters'] / Pi_ego
+        CCE_Pi['Pi_ego_alters_ratio'] = CCE_Pi['Pi_ego_alters'] / Pi_ego
         CCE_Pi['userid'] = ego
 
         if egoshow:
