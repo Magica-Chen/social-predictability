@@ -1439,6 +1439,7 @@ class MeetupCrossValid(MeetupWhole):
     def _CCE_Pi(self, n_included, alters, ego_time, ego_placeid, ego_L,
                 length_ego_uni, length_ego):
         """ alters only"""
+        alters_names = ','.join(map(lambda x: "'" + x + "'", alters))
         alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
                                                                                    ego_placeid,
                                                                                    ego_L,
@@ -1457,4 +1458,4 @@ class MeetupCrossValid(MeetupWhole):
                                                                     length_ego,
                                                                     alters_L,
                                                                     ave_length)
-        return [n_included, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
+        return [n_included, alters_names, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
