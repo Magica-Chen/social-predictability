@@ -1371,8 +1371,8 @@ class MeetupCrossValid(MeetupWhole):
     def _submeetup(self, n_meetupers=10):
         whole_meetup= self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(
             name='n_meetupers').merge(self.user_meetup, how='right', on='userid_x')
-        self.user_meetup = whole_meetup[whole_meetup['n_meetupers'] == n_meetupers]
-        self.egolist = list(set(self.user_meetup['userid_x'].tolist()))
+        user_meetup = whole_meetup[whole_meetup['n_meetupers'] == n_meetupers]
+        self.egolist = list(set(user_meetup['userid_x'].tolist()))
         return self.egolist
 
     def ego_info(self, n_shown=10, verbose=False, filesave=False):
