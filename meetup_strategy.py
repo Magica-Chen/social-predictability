@@ -1423,7 +1423,7 @@ class MeetupCrossValid(MeetupWhole):
                                length_ego_uni, length_ego) for n_included in range(1, n_meetupers + 1)
                   for alters in combinations(total_alters, n_included)]
 
-        CCE_Pi = pd.DataFrame(CCE_Pi, columns=['Included',
+        CCE_Pi = pd.DataFrame(CCE_Pi, columns=['Included', 'alters_names',
                                                'CCE_alters', 'CCE_ego_alters',
                                                'Pi_alters', 'Pi_ego_alters']
                               )
