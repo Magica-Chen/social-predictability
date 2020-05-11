@@ -1503,10 +1503,14 @@ class FriendNetwork(Meetup):
         friendship = self.user_meetup[self.user_meetup['userid_x'] == ego]
         alterlist = friendship['userid_y'].tolist()
         ego_end = self._extract_datetime(ego, latest=True)
-        alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
+        # alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
 
-        friendship['N_previous'] = np.array(alters_former)
-        friendship['N_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
+        name_x = friendship.apply(lambda row: self._former_count(ego_end, row.userid_y), axis=1)
+        name_y = friendship.apply(lambda row: len(self.placeidT[row.userid_y]), axis=1)
+        friendship = friendship.assign(N_previous=name_x.values, N_alter_total=name_y.values)
+
+        # friendship['N_previous'] = np.array(alters_former)
+        # friendship['N_alter_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
         ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
@@ -1523,7 +1527,7 @@ class FriendNetwork(Meetup):
         CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego)
                  for alter in alterlist]
 
-        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'CE_alter', 'Pi_alter'])
+        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'CE_alter', 'Pi_alter'])
         friendship = friendship.merge(CE_Pi, how='left', on='userid_y')
         friendship['CE_ego'] = CE_ego
         friendship['Pi_ego'] = Pi_ego
@@ -1558,4 +1562,9 @@ class FriendNetwork(Meetup):
             CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
                                                              [L], length_alter_former)
 
-        return [alter, CE_alter, Pi_alter]
+        if CE_alter < np.log2(length_ego_uni):
+            group = 'helpful'
+        else:
+            group = 'useless'
+
+        return [alter, group, CE_alter, Pi_alter]
