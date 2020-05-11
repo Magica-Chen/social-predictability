@@ -1505,7 +1505,6 @@ class FriendNetwork(Meetup):
         alterlist = df_ego['userid_y'].tolist()
         alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         friendship = self.user_meetup[self.user_meetup['userid_x'] == ego]
-        friendship.columns = ['userid_x', 'userid_y']
         friendship['N_previous'] = np.array(alters_former)
         friendship['N_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
