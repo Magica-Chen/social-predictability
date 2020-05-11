@@ -1537,11 +1537,11 @@ class FriendNetwork(Meetup):
 
         return friendship
 
-    def ego_info(self):
+    def ego_info(self, verbose=False):
         """ concat the friendship network for all users
         :return: merged dataframe with all the friendship network information
         """
-        friend_list = [self._ego_alter(ego) for ego in self.egolist]
+        friend_list = [self._ego_alter(ego, verbose) for ego in self.egolist]
         friendship_network = pd.concat(friend_list, sort=False)
 
         n_friends = friendship_network.groupby('userid_x')['userid_y'].count().reset_index(name='count')
