@@ -1499,12 +1499,12 @@ class FriendNetwork(Meetup):
         :param egoshow: whether print ego
         :return: CE and Predictability for alters only and ego+alters case
         """
-        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
-        ego_end = self._extract_datetime(ego, latest=True)
 
-        alterlist = df_ego['userid_y'].tolist()
-        alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         friendship = self.user_meetup[self.user_meetup['userid_x'] == ego]
+        alterlist = friendship['userid_y'].tolist()
+        ego_end = self._extract_datetime(ego, latest=True)
+        alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
+
         friendship['N_previous'] = np.array(alters_former)
         friendship['N_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
