@@ -1369,7 +1369,7 @@ class MeetupCrossValid(MeetupWhole):
         self.cross_info = None
 
     def _submeetup(self, n_meetupers=10):
-        whole_meetup= self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(
+        whole_meetup = self.user_meetup.groupby('userid_x')['userid_y'].count().reset_index(
             name='n_meetupers').merge(self.user_meetup, how='right', on='userid_x')
         user_meetup = whole_meetup[whole_meetup['n_meetupers'] == n_meetupers]
         self.egolist = list(set(user_meetup['userid_x'].tolist()))
@@ -1459,3 +1459,104 @@ class MeetupCrossValid(MeetupWhole):
                                                                     alters_L,
                                                                     ave_length)
         return [n_included, alters_names, CCE_alters, CCE_ego_alters, Pi_alters, Pi_ego_alters]
+
+
+class FriendNetwork(Meetup):
+    """
+    Create a true friendship network class to see the predictability
+    """
+
+    def __init__(self, path, friend_network, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 placeidT=None):
+        """
+        Arg:
+            path, mins_records, geoid, resolution are from the mother class Meetup
+            friend_network, df, including all the friendship network information
+            placeidT: dict, include all the users' temporal placeid, keys are the userids
+
+        """
+        super(FriendNetwork, self).__init__(path, mins_records, geoid, resolution, epsilon)
+
+        self.total_meetup = friend_network.copy()
+        self.user_meetup = friend_network.copy()
+
+        self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+        self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+
+        if placeidT is None:
+            self.placeidT = self.temporal_placeid()
+        else:
+            self.placeidT = placeidT
+
+        self.epsilon = epsilon
+
+    def _ego_alter(self, ego, egoshow=False):
+        """
+        extract information of ego and compute all the statistics
+        :param ego: userid of ego
+        :param egoshow: whether print ego
+        :return: CE and Predictability for alters only and ego+alters case
+        """
+        df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid', 'datetimeH']]
+        ego_end = self._extract_datetime(ego, latest=True)
+
+        alterlist = df_ego['userid_y'].tolist()
+        alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
+        friendship = self.user_meetup[self.user_meetup['userid_x'] == ego]
+        friendship.columns = ['userid_x', 'userid_y']
+        friendship['N_previous'] = np.array(alters_former)
+        friendship['N_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
+
+        ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
+        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        """ego only"""
+        total_time = sorted(ego_time + ego_time)
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
+
+        CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_ego = util.getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
+
+        """alter only (not alters)"""
+        """ Here we generate a combinations of included alters"""
+
+        CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego)
+                 for alter in alterlist]
+
+        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'CE_alter', 'Pi_alter'])
+        friendship = friendship.merge(CE_Pi, how='left', on='userid_y')
+        friendship['CE_ego'] = CE_ego
+        friendship['Pi_ego'] = Pi_ego
+
+        if egoshow:
+            print(ego)
+
+        return friendship
+
+    def ego_info(self):
+        """ concat the friendship network for all users
+        :return: merged dataframe with all the friendship network information
+        """
+        friend_list = [self._ego_alter(ego) for ego in self.egolist]
+        friendship_network = pd.concat(friend_list, sort=False)
+
+        n_friends = friendship_network.groupby('userid_x')['userid_y'].count().reset_index(name='count')
+        n_friends.columns = ['userid_x', 'n_friends']
+        self.total_meetup = friendship_network.merge(n_friends, how='left', on='userid_x')
+
+        return self.total_meetup
+
+    def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
+               length_ego_uni, length_ego):
+
+        L, wb, length_alter_former = self._ego_alter_basic(ego_time, ego_placeid, ego_L, alter)
+
+        """ For alter only """
+        if wb == 0:
+            CE_alter, Pi_alter = np.nan, np.nan
+        else:
+            CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
+                                                             [L], length_alter_former)
+
+        return [alter, CE_alter, Pi_alter]
