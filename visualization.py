@@ -515,4 +515,25 @@ def cv_plot(data, plot_type='errorbar', mode='talk', l=12, w=7):
         ax.set_title(type_name)
         ax.set_ylabel('$\Pi_{alters}/ \Pi_{ego}$')
         ax.set_xlabel('Included Number of Alters')
-    plt.show
+    plt.show()
+
+
+def cv_compare_plot(data, mode='talk', l=12, w=7):
+    sns.set_context(mode)
+    sns.set_style("whitegrid")
+    egolist = data['userid'].unique().tolist()
+    fig, ax = plt.subplots(figsize=(l, w))
+
+    sns.pointplot(x="Included", y="Pi_alters_ratio", data=data, hue='category',
+                  ci=95, join=False, ax=ax)
+
+    if len(egolist) > 1:
+        type_name = 'Comparison between true friendship and meetup friendship for all ' + str(len(egolist)) + " users"
+    else:
+        Pi_ego = data['Pi_ego'].tolist()[0]
+        type_name = egolist[0] + ', $\Pi_{max}=$' + str(Pi_ego)
+    ax.set_title(type_name)
+    ax.set_ylabel('$\Pi_{alters}/ \Pi_{ego}$')
+    ax.set_xlabel('Included Number of Alters')
+    plt.show()
+
