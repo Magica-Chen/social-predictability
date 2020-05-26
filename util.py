@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # entropy_functions.py
-# (c) Zexun Chen, 2020-04-09
+# (c) Zexun Chen, Sean Kelty 2020-05-26
 # sxtpy2010@gmail.com
 
 import pandas as pd
