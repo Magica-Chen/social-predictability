@@ -152,7 +152,7 @@ def uniq_LZ_entropy(seq, lambdas=False, e=200):
         wb = len([x for x in L if x > 0])
         if lambdas:
             return L
-        return (1.0 * wb / sum(L)) * np.log2(N)
+        return (1.0 * wb / sum(L)) * np.log2(N - 1)
 
 
 def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
