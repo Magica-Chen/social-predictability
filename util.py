@@ -146,7 +146,7 @@ def uniq_LZ_entropy(seq, lambdas=False, e=200):
             c = i
             while seen and c < N:
                 c += 1
-                seen = (" %s " % " ".join(seq[i:c + 1])).strip() in prevSeq
+                seen = " %s " % " ".join(seq[i:c + 1]).strip() in prevSeq
             l = c - i
             L.append(l)
         wb = len([x for x in L if x != 0])
