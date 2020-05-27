@@ -146,7 +146,7 @@ def uniq_LZ_entropy(seq, lambdas=False, e=200):
             c = i
             while seen and c < N:
                 c += 1
-                seen = (" %s " % " ".join(seq[i:c + 1])) in prevSeq
+                seen = (" %s " % " ".join(seq[i:c + 1])).strip() in prevSeq
             l = c - i
             L.append(l)
         wb = len([x for x in L if x > 0])
@@ -183,7 +183,7 @@ def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
             c = j
             while seen and c < lenW2:
                 c += 1
-                seen = (" %s " % " ".join(W2[j:c]) in prevW1)
+                seen = (" %s " % " ".join(W2[j:c+1]).strip() in prevW1)
             l = c - j
             L.append(l)
 
@@ -194,4 +194,4 @@ def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
         if sum(L) == wb:
             return np.nan
         else:
-            return (1.0 * wb / sum(L)) * np.log2(lenW1)
+            return (1.0 * wb / sum(L)) * np.log2(lenW1 - 1)
