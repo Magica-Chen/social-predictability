@@ -1537,7 +1537,7 @@ class FriendNetwork(Meetup):
 
         return friendship
 
-    def ego_info(self, verbose=False):
+    def ego_info(self, verbose=False, filesave=False):
         """ concat the friendship network for all users
         :return: merged dataframe with all the friendship network information
         """
@@ -1547,6 +1547,10 @@ class FriendNetwork(Meetup):
         n_friends = friendship_network.groupby('userid_x')['userid_y'].count().reset_index(name='count')
         n_friends.columns = ['userid_x', 'n_friends']
         self.total_meetup = friendship_network.merge(n_friends, how='left', on='userid_x')
+
+        if filesave:
+            filename = 'True-Friendship-details'
+            self.total_meetup.to_csv(filename, index=False)
 
         return self.total_meetup
 
