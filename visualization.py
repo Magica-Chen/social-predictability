@@ -468,21 +468,23 @@ def hist_pred_gender(user_stats, user_stats_mixed=None, l=12, w=6, n_bins=100, m
     plt.show()
 
     
-def cv_plot(data, plot_type='errorbar', mode='talk', l=12, w=7):
+def cv_plot(data, plot_type='errorbar', threshold=15, mode='talk', l=12, w=7):
     sns.set_context(mode)
     sns.set_style("whitegrid")
     egolist = data['userid'].unique().tolist()
+    if threshold is None:
+        threshold = len(set(data['Included'].tolist()))
         
     if plot_type is 'two':
         fig, [ax1, ax2] = plt.subplots(1,2, figsize=(l, w))
-        sns.boxplot(x="Included", y="Pi_alters_ratio", data=data, 
+        sns.boxplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                     color='red', ax=ax1)
         type_name = 'Boxplot'
         ax1.set_title(type_name)
         ax1.set_ylabel('$\Pi_{alters}/ \Pi_{ego}$')
         ax1.set_xlabel('Included Number of Alters')
 
-        sns.pointplot(x="Included", y="Pi_alters_ratio", data=data, 
+        sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                     color='blue', ci=95, join=False, ax=ax2)
         type_name = 'Mean with 95% CI'
         ax2.set_title(type_name)
@@ -499,11 +501,11 @@ def cv_plot(data, plot_type='errorbar', mode='talk', l=12, w=7):
     else:
         fig, ax = plt.subplots(figsize=(l, w))
         if plot_type is 'box':
-            sns.boxplot(x="Included", y="Pi_alters_ratio", data=data,
+            sns.boxplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                         color='red', ax=ax)
             type_name = 'Boxplot'
         elif plot_type is 'errorbar':
-            sns.pointplot(x="Included", y="Pi_alters_ratio", data=data,
+            sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                           color='blue', ci=95, join=False, ax=ax)
             type_name = 'Mean with 95% CI'
             
@@ -518,14 +520,16 @@ def cv_plot(data, plot_type='errorbar', mode='talk', l=12, w=7):
     plt.show()
 
 
-def cv_compare_plot(data, mode='talk', l=12, w=7):
+def cv_compare_plot(data, threshold=15, mode='talk', l=12, w=7):
     sns.set_context(mode)
     sns.set_style("whitegrid")
     egolist = data['userid'].unique().tolist()
     fig, ax = plt.subplots(figsize=(l, w))
+    if threshold is None:
+        threshold = len(set(data['Included'].tolist()))
 
-    sns.pointplot(x="Included", y="Pi_alters_ratio", data=data, hue='category',
-                  ci=95, join=False, ax=ax)
+    sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
+                  hue='category', ci=95, join=False, ax=ax)
 
     if len(egolist) > 1:
         type_name = 'Comparison between true friendship and meetup friendship for all ' + str(len(egolist)) + " users"
