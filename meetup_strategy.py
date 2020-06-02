@@ -1549,7 +1549,7 @@ class FriendNetwork(Meetup):
         self.total_meetup = friendship_network.merge(n_friends, how='left', on='userid_x')
 
         if filesave:
-            filename = 'True-Friendship-details'
+            filename = 'True-Friendship-details.csv'
             self.total_meetup.to_csv(filename, index=False)
 
         return self.total_meetup
