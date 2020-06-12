@@ -197,3 +197,17 @@ def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
             return np.nan
         else:
             return (1.0 * wb / sum(L)) * np.log2(lenW1 - 1)
+
+
+def network_similarity(network):
+    egolist = network['userid'].unique().tolist()
+    rate_list = [similarity(ego, network) for ego in egolist]
+    df_similarity = pd.DataFrame(rate_list, columns=['userid', 'similarity_rate'])
+    return df_similarity
+
+
+def similarity(ego, share_network):
+    A = len(share_network[share_network['userid'] == ego]['userid_y'])
+    B = share_network[share_network['userid'] == ego]['userid_y'].nunique()
+    return [ego, (A - B) / A * 2]
+
