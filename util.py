@@ -211,3 +211,9 @@ def similarity(ego, share_network):
     B = share_network[share_network['userid'] == ego]['userid_y'].nunique()
     return [ego, (A - B) / A * 2]
 
+
+def co_location_rate(ego, alter, placeid_set):
+    ego_set = placeid_set[ego]
+    alter_set = placeid_set[alter]
+    common_elements = ego_set & alter_set
+    return len(common_elements) / len(ego_set)
