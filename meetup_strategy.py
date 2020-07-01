@@ -1492,7 +1492,7 @@ class FriendNetwork(Meetup):
 
         self.epsilon = epsilon
 
-    def _ego_alter(self, ego, egoshow=False):
+    def _ego_alter(self, ego, egoshow=False, unique=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
@@ -1513,12 +1513,18 @@ class FriendNetwork(Meetup):
         # friendship['N_alter_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
-        ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        if unique:
+            ego_L = util.uniq_LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
+        else:
+            ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         """ego only"""
         total_time = sorted(ego_time + ego_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
-        CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        if unique:
+            CE_ego = util.uniq_LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
+        else:
+            CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
         Pi_ego = util.getPredictability(length_ego_uni, CE_ego, e=self.epsilon)
 
         """alter only (not alters)"""
