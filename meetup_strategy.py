@@ -1562,6 +1562,7 @@ class FriendNetwork(Meetup):
 
     def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
                length_ego_uni, length_ego):
+        length_alter_former = []
         if self.unique:
             alter_time, _, _, alter_placeid = self._extract_info(alter)
 
