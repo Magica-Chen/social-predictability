@@ -217,3 +217,20 @@ def co_location_rate(ego, alter, placeid_set):
     alter_set = placeid_set[alter]
     common_elements = ego_set & alter_set
     return len(common_elements) / len(ego_set)
+
+
+#Fano Inequality
+def binaryEnt(x):
+    return -1*(x*np.log2(x) + (1-x)*np.log2(1-x))
+
+def Fano(Pi_max, N, S):
+    return (1-Pi_max)*np.log2(N)-S+binaryEnt(1-Pi_max)
+
+def CalcPi(N,S, thresh = .9):
+    if math.isnan(S) or (N == 1) or (np.log2(N) < S):
+        return float('nan')
+    else:
+        if (S/np.log2(N) > thresh) or (S < 1):
+            return fsolve(Fano,.05,(N,S))[0]
+        else:
+            return fsolve(Fano,.5,(N,S))[0]
