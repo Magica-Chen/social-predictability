@@ -247,7 +247,7 @@ class Meetup(object):
         Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
         return CCE_alters, Pi_alters
 
-    def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter):
+    def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter, unique=False):
         """
         use ego's info and alter id, to compute the basic info for cumulative cross entropy
         :param ego_time: time series of ego
@@ -263,9 +263,12 @@ class Meetup(object):
 
         total_time = sorted(ego_time + alter_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
-
-        L = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-                                  lambdas=True, e=self.epsilon)
+        if unique:
+            L = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                           lambdas=True, e=self.epsilon)
+        else:
+            L = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                      lambdas=True, e=self.epsilon)
         wb = self.weight(ego_L, L)
         # only count the length no later than the last time of ego
         length_alter_former = self._length_former(ego_time, alter_time)
@@ -1467,7 +1470,7 @@ class FriendNetwork(Meetup):
     """
 
     def __init__(self, path, friend_network, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 placeidT=None):
+                 placeidT=None, unique=False):
         """
         Arg:
             path, mins_records, geoid, resolution are from the mother class Meetup
@@ -1491,8 +1494,9 @@ class FriendNetwork(Meetup):
             self.placeidT = placeidT
 
         self.epsilon = epsilon
+        self.unique = unique
 
-    def _ego_alter(self, ego, egoshow=False, unique=False):
+    def _ego_alter(self, ego, egoshow=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
@@ -1513,7 +1517,7 @@ class FriendNetwork(Meetup):
         # friendship['N_alter_total'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
-        if unique:
+        if self.unique:
             ego_L = util.uniq_LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
         else:
             ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
@@ -1521,7 +1525,7 @@ class FriendNetwork(Meetup):
         total_time = sorted(ego_time + ego_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
-        if unique:
+        if self.unique:
             CE_ego = util.uniq_LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
         else:
             CE_ego = util.LZ_cross_entropy(ego_placeid, ego_placeid, PTs, e=self.epsilon)
@@ -1563,7 +1567,11 @@ class FriendNetwork(Meetup):
     def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
                length_ego_uni, length_ego):
 
-        L, wb, length_alter_former = self._ego_alter_basic(ego_time, ego_placeid, ego_L, alter)
+        L, wb, length_alter_former = self._ego_alter_basic(ego_time,
+                                                           ego_placeid,
+                                                           ego_L,
+                                                           alter,
+                                                           unique=self.unique)
 
         """ For alter only """
         if wb == 0:
