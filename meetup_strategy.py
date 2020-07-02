@@ -15,6 +15,7 @@ from datetime import timedelta
 from preprocessing import geo2id, pre_processing
 import util
 from itertools import combinations
+from itertools import chain
 
 SEED = 2020  # set random seed for our random function
 
@@ -1613,8 +1614,10 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                                                  n_meetupers, n_previous,
                                                  user_meetup, total_meetup, placeidT)
 
-    def _cross_entropy_pair(self, ego_time, ego_placeid, ego_L, alter, alters,
-                            L, wb, length_alters, temp_shuffle=False):
+    def __ego_alter_element(self, ego_time, ego_placeid, ego_L, alter, alters,
+                            L, wb, length_alters,
+                            uniq_share_locs,
+                            temp_shuffle=False):
         """ Protected method (recursive structure): compute cross entropy related to statistics
         Args:
             ego_time: datetime,
@@ -1664,6 +1667,10 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         # #length_alters[alterid] = length_alter
         # use length_former to get valid length of alter
         length_alters[alterid] = self._length_former(ego_time, alter_time)
+        uniq_share_locs[alterid] = list(set(alter_placeid[:length_alters[alterid]]) & set(ego_placeid))
+        n_uniq_share_locs = len(uniq_share_locs[alterid])
+        cum_uniq_share_locs = chain(*uniq_share_locs[:alterid + 1])
+        n_cum_uniq_share_locs = len(cum_uniq_share_locs)
 
         """ For alter"""
         if wb[alterid] == 0:
@@ -1679,16 +1686,16 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         wb_length = wb[:alterid + 1]
         # average lengths
 
-        temp_length= np.array(alters_length, dtype=np.float64)
+        temp_length = np.array(alters_length, dtype=np.float64)
         temp_wb = np.array(wb_length, dtype=np.float64)
         if np.nansum(temp_wb) == 0:
             ave_length = np.nan
         else:
             ave_length = np.nansum(temp_length * temp_wb) / np.nansum(temp_wb)
         alters_Lmax = np.amax(alters_L, axis=0)
-        n_ego_seen = len([x for x in alters_Lmax if x > 0])
+        n_ego_seen_alters = len([x for x in alters_Lmax if x > 0])
         sum_L = np.sum(alters_Lmax)
-        CCE_alters = (1.0 * n_ego_seen / sum_L) * np.log2(ave_length)
+        CCE_alters = (1.0 * n_ego_seen_alters / sum_L) * np.log2(ave_length)
         Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
 
         """For only this alter + ego"""
@@ -1711,7 +1718,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         alters_length.append(length_ego)
         wb_length = wb[:alterid + 1] + [self.weight(ego_L)]
 
-        temp_length= np.array(alters_length, dtype=np.float64)
+        temp_length = np.array(alters_length, dtype=np.float64)
         temp_wb = np.array(wb_length, dtype=np.float64)
         if np.nansum(temp_wb) == 0:
             ave_length = np.nan
@@ -1729,18 +1736,18 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         else:
             group = 'useless'
 
-        return [alter, group, rank, wb[alterid], alter_log2,
+        return [alter, group, rank, wb[alterid],
+                n_uniq_share_locs, n_cum_uniq_share_locs, n_ego_seen_alters,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    def _ego_meetup(self, ego, tempsave=False, egoshow=False,
-                    temp_shuffle=False, social_shuffle=False):
+    def _ego_alter(self, ego, egoshow=False,
+                   temp_shuffle=False, social_shuffle=False):
         """ Protected method: obtain all the meetup-cross-entropy info for ego
         It can save each ego's record temporarily save to csv file
         Args:
             ego: string, a user
-            tempsave: bool, whether it will save csv
             egoshow: bool, whether print ego
             temp_shuffle: bool, whether do temporal control
             social_shuffle: bool, whether do social control
@@ -1766,13 +1773,16 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         L = [None] * N_alters
         wb = [None] * N_alters
         length_alters = [None] * N_alters
+        uniq_share_locs = [None] * N_alters
 
-        ego_stats = [self._cross_entropy_pair(ego_time, ego_placeid, ego_L, alter, alters,
-                                              L, wb, length_alters,
+        ego_stats = [self.__ego_alter_element(ego_time, ego_placeid, ego_L, alter, alters,
+                                              L, wb,
+                                              length_alters, uniq_share_locs,
                                               temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank_tr', 'Weight_tr', 'alter_info_tr',
+                'userid_y', 'group', 'Included Rank_tr', 'Weight_tr',
+                'n_ULI_tr', 'n_CULI_tr', 'n_ego_seen_alters_tr',
                 'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
                 'Pi_alter_tr', 'Pi_alters_tr', 'Pi_ego_alter_tr', 'Pi_ego_alters_tr',
             ])
@@ -1780,7 +1790,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             meetup_ego.insert(0, 'userid_x', ego)
         elif social_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank_sr', 'Weight_sr', 'alter_info_sr',
+                'userid_y', 'group', 'Included Rank_sr', 'Weight_sr',
+                'n_ULI_sr', 'n_CULI_sr', 'n_ego_seen_alters_sr',
                 'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
                 'Pi_alter_sr', 'Pi_alters_sr', 'Pi_ego_alter_sr', 'Pi_ego_alters_sr',
             ])
@@ -1788,7 +1799,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             meetup_ego.insert(0, 'userid_x', ego)
         else:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank', 'Weight', 'alter_info',
+                'userid_y', 'group', 'Included Rank', 'Weight',
+                'n_ULI', 'n_CULI', 'n_ego_seen_alters',
                 'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
                 'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
             ])
@@ -1798,8 +1810,6 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
             meetup_ego['n_meetupers'] = N_alters
 
-        if tempsave:
-            meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
         if egoshow:
             print(ego)
 
