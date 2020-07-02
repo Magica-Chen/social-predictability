@@ -592,7 +592,7 @@ class MeetupOneByOne(Meetup):
             end = len(self.egolist)
 
         random.seed(SEED)
-        meetup_list = [self._ego_meetup(ego, tempsave=filesave, egoshow=verbose,
+        meetup_list = [self._ego_meetup(ego, tempsave=False, egoshow=verbose,
                                         temp_shuffle=temp_shuffle,
                                         social_shuffle=social_shuffle)
                        for ego in self.egolist[start:end]]
@@ -1742,7 +1742,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
-    def _ego_alter(self, ego, egoshow=False,
+    def _ego_meetup(self, ego, tempsave=False, egoshow=False,
                    temp_shuffle=False, social_shuffle=False):
         """ Protected method: obtain all the meetup-cross-entropy info for ego
         It can save each ego's record temporarily save to csv file
@@ -1809,6 +1809,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             df_ego_meetup = self.user_meetup[self.user_meetup['userid_x'] == ego]
             meetup_ego = pd.merge(df_ego_meetup, ego_stats, on='userid_y')
             meetup_ego['n_meetupers'] = N_alters
+        if tempsave:
+            meetup_ego.to_csv('user-meetup-part.csv', index=False, mode='a', header=False)
 
         if egoshow:
             print(ego)
