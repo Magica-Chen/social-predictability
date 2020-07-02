@@ -219,7 +219,7 @@ def co_location_rate(ego, alter, placeid_set):
     return len(common_elements) / len(ego_set)
 
 
-#Fano Inequality
+#Fano Inequality: Skelty
 def binaryEnt(x):
     return -1*(x*np.log2(x) + (1-x)*np.log2(1-x))
 
