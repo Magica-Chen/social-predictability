@@ -1670,7 +1670,6 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             CE_alter, Pi_alter = np.nan, np.nan
         else:
             CE_alter = (1.0 * wb[alterid] / sum(L[alterid])) * np.log2(length_alters[alterid])
-            print(CE_alter)
             Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
 
         """ For all above alters """
@@ -1710,11 +1709,14 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         # for ego+alters: top above all alters + ego
         alters_L.append(ego_L)
         alters_length.append(length_ego)
-        ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
-        if np.nansum(ego_alters_weight) == 0:
+        wb_length = wb[:alterid + 1] + [self.weight(ego_L)]
+
+        temp_length= np.array(alters_length, dtype=np.float64)
+        temp_wb = np.array(wb_length, dtype=np.float64)
+        if np.nansum(temp_wb) == 0:
             ave_length = np.nan
         else:
-            ave_length = np.nansum(alters_length * ego_alters_weight) / np.nansum(ego_alters_weight)
+            ave_length = np.nansum(temp_length * temp_wb) / np.nansum(temp_wb)
         alters_Lmax = np.amax(alters_L, axis=0)
         n_ego_seen = len([x for x in alters_Lmax if x > 0])
         sum_L = np.sum(alters_Lmax)
