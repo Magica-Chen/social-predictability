@@ -1562,7 +1562,7 @@ class FriendNetwork(Meetup):
 
     def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
                length_ego_uni, length_ego):
-        length_alter_former = []
+
         if self.unique:
             alter_time, _, _, alter_placeid = self._extract_info(alter)
 
@@ -1575,6 +1575,7 @@ class FriendNetwork(Meetup):
 
             if wb == 0:
                 CE_alter, Pi_alter = np.nan, np.nan
+                length_alter_former = 0
             else:
                 CE_alter = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                                                       lambdas=False, e=self.epsilon)
