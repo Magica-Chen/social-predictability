@@ -1672,6 +1672,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             CE_alter = self.cumulative_cross_entropy(length_ego,
                                                      [L[alterid]],
                                                      length_alters[alterid])
+            print(CE_alter)
             Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
 
         """ For all above alters """
