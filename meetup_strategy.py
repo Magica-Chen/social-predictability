@@ -1679,30 +1679,47 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         alters_length = length_alters[:alterid + 1]
         wb_length = wb[:alterid + 1]
         # average lengths
-        ave_length = self._ave(alters_length, wb_length)
-        # CCE for all above alters
-        CCE_alters, Pi_alters = self.entropy_predictability(length_ego_uni, length_ego,
-                                                            alters_L, ave_length)
+
+        temp_length= np.array(alters_length, dtype=np.float64)
+        temp_wb = np.array(wb_length, dtype=np.float64)
+        if np.nansum(temp_wb) == 0:
+            ave_length = np.nan
+        else:
+            ave_length = np.nansum(temp_length * temp_wb) / np.nansum(temp_wb)
+        alters_Lmax = np.amax(alters_L, axis=0)
+        n_ego_seen = len([x for x in alters_Lmax if x > 0])
+        sum_L = np.sum(alters_Lmax)
+        CCE_alters = (1.0 * n_ego_seen / sum_L) * np.log2(ave_length)
+        Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
+
         """For only this alter + ego"""
         # for only this alter and ego
         ego_alter_L = [ego_L, L[alterid]]
         bi_length = np.array([length_alters[alterid], length_ego], dtype=np.float64)
         bi_weight = np.array([wb[alterid], self.weight(ego_L)], dtype=np.float64)
-        ave_length = self._ave(bi_length, bi_weight)
-        CCE_ego_alter, Pi_ego_alter = self.entropy_predictability(length_ego_uni,
-                                                                  length_ego,
-                                                                  ego_alter_L,
-                                                                  ave_length)
+        if np.nansum(bi_weight) == 0:
+            ave_length = np.nan
+        else:
+            ave_length = np.nansum(bi_length * bi_weight) / np.nansum(bi_weight)
+        alters_Lmax = np.amax(ego_alter_L, axis=0)
+        sum_L = np.sum(alters_Lmax)
+        CCE_ego_alter = (1.0 * length_ego / sum_L) * np.log2(ave_length)
+        Pi_ego_alter = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
+
         """For all above alters + ego"""
         # for ego+alters: top above all alters + ego
         alters_L.append(ego_L)
         alters_length.append(length_ego)
         ego_alters_weight = wb[:alterid + 1] + [self.weight(ego_L)]
-        ave_length = self._ave(alters_length, ego_alters_weight)
-        CCE_ego_alters, Pi_ego_alters = self.entropy_predictability(length_ego_uni,
-                                                                    length_ego,
-                                                                    alters_L,
-                                                                    ave_length)
+        if np.nansum(ego_alters_weight) == 0:
+            ave_length = np.nan
+        else:
+            ave_length = np.nansum(alters_length * ego_alters_weight) / np.nansum(ego_alters_weight)
+        alters_Lmax = np.amax(alters_L, axis=0)
+        n_ego_seen = len([x for x in alters_Lmax if x > 0])
+        sum_L = np.sum(alters_Lmax)
+        CCE_ego_alters = (1.0 * n_ego_seen / sum_L) * np.log2(ave_length)
+        Pi_ego_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
 
         """ classify alters as helpful and useless"""
         if CE_alter < np.log2(length_ego_uni):
