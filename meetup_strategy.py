@@ -1533,7 +1533,7 @@ class FriendNetwork(Meetup):
         CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego)
                  for alter in alterlist]
 
-        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'wb', 'n_previous','CE_alter', 'Pi_alter'])
+        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'wb', 'CE_alter', 'Pi_alter'])
         friendship = friendship.merge(CE_Pi, how='left', on='userid_y')
         friendship['CE_ego'] = CE_ego
         friendship['Pi_ego'] = Pi_ego
@@ -1575,13 +1575,10 @@ class FriendNetwork(Meetup):
 
             if wb == 0:
                 CE_alter, Pi_alter = np.nan, np.nan
-                length_alter_former = 0
             else:
                 CE_alter = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                                                       lambdas=False, e=self.epsilon)
                 Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
-
-                length_alter_former = self._length_former(ego_time, alter_time)
 
         else:
             L, wb, length_alter_former = self._ego_alter_basic(ego_time,
@@ -1601,4 +1598,4 @@ class FriendNetwork(Meetup):
         else:
             group = 'useless'
 
-        return [alter, group, wb, length_alter_former, CE_alter, Pi_alter]
+        return [alter, group, wb, CE_alter, Pi_alter]
