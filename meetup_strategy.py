@@ -1669,7 +1669,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         length_alters[alterid] = self._length_former(ego_time, alter_time)
         uniq_share_locs[alterid] = list(set(alter_placeid[:length_alters[alterid]]) & set(ego_placeid))
         n_uniq_share_locs = len(uniq_share_locs[alterid])
-        cum_uniq_share_locs = chain(*uniq_share_locs[:alterid + 1])
+        cum_uniq_share_locs = list(chain(*uniq_share_locs[:alterid + 1]))
         n_cum_uniq_share_locs = len(cum_uniq_share_locs)
 
         """ For alter"""
