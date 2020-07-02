@@ -247,7 +247,7 @@ class Meetup(object):
         Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
         return CCE_alters, Pi_alters
 
-    def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter, unique=False):
+    def _ego_alter_basic(self, ego_time, ego_placeid, ego_L, alter):
         """
         use ego's info and alter id, to compute the basic info for cumulative cross entropy
         :param ego_time: time series of ego
@@ -263,12 +263,8 @@ class Meetup(object):
 
         total_time = sorted(ego_time + alter_time)
         PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
-        if unique:
-            L = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-                                           lambdas=True, e=self.epsilon)
-        else:
-            L = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
-                                      lambdas=True, e=self.epsilon)
+        L = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                  lambdas=True, e=self.epsilon)
         wb = self.weight(ego_L, L)
         # only count the length no later than the last time of ego
         length_alter_former = self._length_former(ego_time, alter_time)
@@ -1537,7 +1533,7 @@ class FriendNetwork(Meetup):
         CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego)
                  for alter in alterlist]
 
-        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'CE_alter', 'Pi_alter'])
+        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'wb', 'n_previous','CE_alter', 'Pi_alter'])
         friendship = friendship.merge(CE_Pi, how='left', on='userid_y')
         friendship['CE_ego'] = CE_ego
         friendship['Pi_ego'] = Pi_ego
@@ -1566,23 +1562,41 @@ class FriendNetwork(Meetup):
 
     def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
                length_ego_uni, length_ego):
+        if self.unique:
+            alter_time, _, _, alter_placeid = self._extract_info(alter)
 
-        L, wb, length_alter_former = self._ego_alter_basic(ego_time,
-                                                           ego_placeid,
-                                                           ego_L,
-                                                           alter,
-                                                           unique=self.unique)
+            total_time = sorted(ego_time + alter_time)
+            PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
 
-        """ For alter only """
-        if wb == 0:
-            CE_alter, Pi_alter = np.nan, np.nan
+            L = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                           lambdas=True, e=self.epsilon)
+            wb = len([x for x in L if x > 0])
+
+            if wb == 0:
+                CE_alter, Pi_alter = np.nan, np.nan
+            else:
+                CE_alter = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
+                                                      lambdas=False, e=self.epsilon)
+                Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
+
+                length_alter_former = self._length_former(ego_time, alter_time)
+
         else:
-            CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
-                                                             [L], length_alter_former)
+            L, wb, length_alter_former = self._ego_alter_basic(ego_time,
+                                                               ego_placeid,
+                                                               ego_L,
+                                                               alter)
+
+            """ For alter only """
+            if wb == 0:
+                CE_alter, Pi_alter = np.nan, np.nan
+            else:
+                CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
+                                                                 [L], length_alter_former)
 
         if CE_alter < np.log2(length_ego_uni):
             group = 'helpful'
         else:
             group = 'useless'
 
-        return [alter, group, CE_alter, Pi_alter]
+        return [alter, group, wb, length_alter_former, CE_alter, Pi_alter]
