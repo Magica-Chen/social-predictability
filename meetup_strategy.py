@@ -1669,9 +1669,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         if wb[alterid] == 0:
             CE_alter, Pi_alter = np.nan, np.nan
         else:
-            CE_alter = self.cumulative_cross_entropy(length_ego,
-                                                     [L[alterid]],
-                                                     length_alters[alterid])
+            CE_alter = (1.0 * wb[alterid] / L[alterid]) * np.log2(length_alters[alterid])
             print(CE_alter)
             Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
 
