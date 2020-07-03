@@ -1628,11 +1628,12 @@ class UniqMeetupOneByOne(MeetupOneByOne):
     """
 
     def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 n_meetupers=None, n_previous=200,
+                 n_meetupers=None, n_previous=200, case='local',
                  user_meetup=None, total_meetup=None, placeidT=None):
         super(UniqMeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon,
                                                  n_meetupers, n_previous,
                                                  user_meetup, total_meetup, placeidT)
+        self.case = case
 
     def __ego_alter_element(self, ego_time, ego_placeid, ego_L, alter, alters,
                             L, wb, length_alters,
@@ -1699,9 +1700,12 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         n_CULI = len(shared_CULI)
         n_prev_CULI = len(shared_prev_CULI)
 
-        if 1:
+        if self.case == 'local':
             pred_length_alter = n_prev_ULI
             pred_length_alters = n_prev_CULI
+        else:
+            pred_length_alter = n_ULI
+            pred_length_alters = n_CULI
 
         """ For alter"""
         if wb[alterid] == 0:
@@ -1814,7 +1818,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                                               temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank_tr', 'Weight_tr',
+                'userid_y', 'group', 'Included Rank_tr', 'wb_tr',
                 'n_ULI_tr', 'n_CULI_tr', 'n_prev_ULI_tr', 'n_prev_CULI_tr',
                 'n_ego_seen_alters_tr',
                 'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
@@ -1824,7 +1828,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             meetup_ego.insert(0, 'userid_x', ego)
         elif social_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank_sr', 'Weight_sr',
+                'userid_y', 'group', 'Included Rank_sr', 'wb_sr',
                 'n_ULI_sr', 'n_CULI_sr', 'n_prev_ULI_sr', 'n_prev_CULI_sr',
                 'n_ego_seen_alters_sr',
                 'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
@@ -1834,7 +1838,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             meetup_ego.insert(0, 'userid_x', ego)
         else:
             ego_stats = pd.DataFrame(ego_stats, columns=[
-                'userid_y', 'group', 'Included Rank', 'Weight',
+                'userid_y', 'group', 'Included Rank', 'wb',
                 'n_ULI', 'n_CULI', 'n_prev_ULI', 'n_prev_CULI',
                 'n_ego_seen_alters',
                 'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
