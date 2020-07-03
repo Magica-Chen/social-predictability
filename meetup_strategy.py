@@ -1694,8 +1694,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         n_ULI = len(ULI[alterid])
         n_prev_ULI = len(prev_ULI[alterid])
 
-        shared_CULI = list(chain(*ULI[:alterid + 1]))
-        shared_prev_CULI = list(chain(*prev_ULI[:alterid + 1]))
+        shared_CULI = set(chain(*ULI[:alterid + 1]))
+        shared_prev_CULI = set(chain(*prev_ULI[:alterid + 1]))
 
         n_CULI = len(shared_CULI)
         n_prev_CULI = len(shared_prev_CULI)
