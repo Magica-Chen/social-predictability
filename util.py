@@ -18,7 +18,7 @@ import math
 
 
 def getPredictability(N, S, e=100):
-    if (N >= e) & np.isfinite(S):
+    if (N >= e) & np.isfinite(S) & (S < np.log2(N + 1e-10)):
         f = lambda x: (((1 - x) / (N - 1)) ** (1 - x)) * x ** x - 2 ** (-S)
         root = mpmath.findroot(f, 1)
         return float(root.real)

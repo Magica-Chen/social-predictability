@@ -1594,7 +1594,7 @@ class FriendNetwork(Meetup):
                                                       lambdas=False, e=self.epsilon)
                 Pi_alter = util.getPredictability(n_length_ULI, CE_alter, e=self.epsilon)
 
-            if CE_alter < np.log2(n_length_ULI):
+            if CE_alter < np.log2(n_length_ULI + 1e-10):
                 group = 'helpful'
             else:
                 group = 'useless'
