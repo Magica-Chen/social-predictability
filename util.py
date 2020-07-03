@@ -222,6 +222,19 @@ def co_location_rate(ego, alter, placeid_set):
     return len(common_elements) / len(ego_set)
 
 
+def shared_ULI(ego_time, ego_placeid, alter_time, alter_placeid):
+    shared_ULI = list(set(alter_placeid) & set(ego_placeid))
+    shared_previous_ULI = []
+    ego_length = len(ego_placeid)
+
+    for x in shared_ULI:
+        ego_index_time = ego_time[ego_length - ego_placeid[::-1].index(x) - 1]
+        if ego_index_time > alter_time[alter_placeid.index(x)]:
+            shared_previous_ULI.append(x)
+
+    return shared_ULI, shared_previous_ULI
+
+
 # Fano Inequality: Skelty
 def binaryEnt(x):
     return -1 * (x * np.log2(x) + (1 - x) * np.log2(1 - x))

@@ -272,16 +272,19 @@ class Meetup(object):
         return L, wb, length_alter_former
 
     @staticmethod
-    def _length_former(ego_time, alter_time):
+    def _length_former(ego_time, alter_time, previous=False):
         """
         count how many points of alter_time happen no later than last ego time
         :param ego_time: list of pd.timestamp
         :param alter_time: list of pd.timestamp
         :return: the number of points of alter_time happen no later than last ego time
         """
-        ego_end = pd.to_datetime(ego_time).to_pydatetime().tolist()[-1]
-        time_alters = pd.to_datetime(alter_time).to_pydatetime().tolist()
-        return sum([x <= ego_end for x in time_alters])
+        if previous:
+            return len(alter_time)
+        else:
+            ego_end = pd.to_datetime(ego_time).to_pydatetime().tolist()[-1]
+            time_alters = pd.to_datetime(alter_time).to_pydatetime().tolist()
+            return sum([x <= ego_end for x in time_alters])
 
 
 class MeetupOneByOne(Meetup):
@@ -1493,10 +1496,11 @@ class FriendNetwork(Meetup):
         self.epsilon = epsilon
         self.unique = unique
 
-    def _ego_alter(self, ego, egoshow=False):
+    def _ego_alter(self, ego, case='local', egoshow=False):
         """
         extract information of ego and compute all the statistics
         :param ego: userid of ego
+        :param case: 'local' or 'global' consideration of length
         :param egoshow: whether print ego
         :return: CE and Predictability for alters only and ego+alters case
         """
@@ -1531,10 +1535,12 @@ class FriendNetwork(Meetup):
         """alter only (not alters)"""
         """ Here we generate a combinations of included alters"""
 
-        CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego)
+        CE_Pi = [self._CE_Pi(alter, ego_time, ego_placeid, ego_L, length_ego_uni, length_ego,
+                             case=case)
                  for alter in alterlist]
 
-        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'wb', 'CE_alter', 'Pi_alter'])
+        CE_Pi = pd.DataFrame(CE_Pi, columns=['userid_y', 'group', 'wb', 'CE_alter', 'Pi_alter',
+                                             'n_ULI', 'case'])
         friendship = friendship.merge(CE_Pi, how='left', on='userid_y')
         friendship['CE_ego'] = CE_ego
         friendship['Pi_ego'] = Pi_ego
@@ -1544,11 +1550,11 @@ class FriendNetwork(Meetup):
 
         return friendship
 
-    def ego_info(self, verbose=False, filesave=False):
+    def ego_info(self, case='local', verbose=False, filesave=False):
         """ concat the friendship network for all users
         :return: merged dataframe with all the friendship network information
         """
-        friend_list = [self._ego_alter(ego, verbose) for ego in self.egolist]
+        friend_list = [self._ego_alter(ego, case, verbose) for ego in self.egolist]
         friendship_network = pd.concat(friend_list, sort=False)
 
         n_friends = friendship_network.groupby('userid_x')['userid_y'].count().reset_index(name='count')
@@ -1562,10 +1568,17 @@ class FriendNetwork(Meetup):
         return self.total_meetup
 
     def _CE_Pi(self, alter, ego_time, ego_placeid, ego_L,
-               length_ego_uni, length_ego):
+               length_ego_uni, length_ego, case='local'):
 
         if self.unique:
             alter_time, _, _, alter_placeid = self._extract_info(alter)
+
+            ULI, prev_ULI = util.shared_ULI(ego_time, ego_placeid,
+                                            alter_time, alter_placeid)
+            if case is 'local':
+                n_length_ULI = len(prev_ULI)
+            else:
+                n_length_ULI = len(ULI)
 
             total_time = sorted(ego_time + alter_time)
             PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
@@ -1579,7 +1592,12 @@ class FriendNetwork(Meetup):
             else:
                 CE_alter = util.uniq_LZ_cross_entropy(alter_placeid, ego_placeid, PTs,
                                                       lambdas=False, e=self.epsilon)
-                Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
+                Pi_alter = util.getPredictability(n_length_ULI, CE_alter, e=self.epsilon)
+
+            if CE_alter < np.log2(n_length_ULI):
+                group = 'helpful'
+            else:
+                group = 'useless'
 
         else:
             L, wb, length_alter_former = self._ego_alter_basic(ego_time,
@@ -1594,12 +1612,14 @@ class FriendNetwork(Meetup):
                 CE_alter, Pi_alter = self.entropy_predictability(length_ego_uni, length_ego,
                                                                  [L], length_alter_former)
 
-        if CE_alter < np.log2(length_ego_uni):
-            group = 'helpful'
-        else:
-            group = 'useless'
+            if CE_alter < np.log2(length_ego_uni):
+                group = 'helpful'
+            else:
+                group = 'useless'
 
-        return [alter, group, wb, CE_alter, Pi_alter]
+            n_length_ULI = length_ego_uni
+
+        return [alter, group, wb, CE_alter, Pi_alter, n_length_ULI, case]
 
 
 class UniqMeetupOneByOne(MeetupOneByOne):
@@ -1616,7 +1636,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
 
     def __ego_alter_element(self, ego_time, ego_placeid, ego_L, alter, alters,
                             L, wb, length_alters,
-                            uniq_share_locs,
+                            ULI, prev_ULI,
                             temp_shuffle=False):
         """ Protected method (recursive structure): compute cross entropy related to statistics
         Args:
@@ -1647,7 +1667,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         if temp_shuffle:
             random.shuffle(alter_placeid)
 
-        alter_log2 = np.log2(length_alter_uniq)
+        # alter_log2 = np.log2(length_alter_uniq)
         """Be careful: W1 in cross_entropy is B in the paper, W2 is cross_entropy is A in the paper """
         # so we need to get the relative time order of ego in alter (abosulte position of ego+alter)
         # for function cross_entropy, we need to have PTs
@@ -1667,17 +1687,28 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         # #length_alters[alterid] = length_alter
         # use length_former to get valid length of alter
         length_alters[alterid] = self._length_former(ego_time, alter_time)
-        uniq_share_locs[alterid] = list(set(alter_placeid[:length_alters[alterid]]) & set(ego_placeid))
-        n_uniq_share_locs = len(uniq_share_locs[alterid])
-        cum_uniq_share_locs = list(chain(*uniq_share_locs[:alterid + 1]))
-        n_cum_uniq_share_locs = len(cum_uniq_share_locs)
+        ULI[alterid], prev_ULI[alterid] = util.shared_ULI(ego_time, ego_placeid,
+                                                          alter_time[:length_alters[alterid]],
+                                                          alter_placeid[:length_alters[alterid]])
+        n_ULI = len(ULI[alterid])
+        n_prev_ULI = len(prev_ULI[alterid])
+
+        shared_CULI = list(chain(*ULI[:alterid + 1]))
+        shared_prev_CULI = list(chain(*prev_ULI[:alterid + 1]))
+
+        n_CULI = len(shared_CULI)
+        n_prev_CULI = len(shared_prev_CULI)
+
+        if 1:
+            pred_length_alter = n_prev_ULI
+            pred_length_alters = n_prev_CULI
 
         """ For alter"""
         if wb[alterid] == 0:
             CE_alter, Pi_alter = np.nan, np.nan
         else:
             CE_alter = (1.0 * wb[alterid] / sum(L[alterid])) * np.log2(length_alters[alterid])
-            Pi_alter = util.getPredictability(length_ego_uni, CE_alter, e=self.epsilon)
+            Pi_alter = util.getPredictability(pred_length_alter, CE_alter, e=self.epsilon)
 
         """ For all above alters """
         # for alters: top above all alters
@@ -1696,7 +1727,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         n_ego_seen_alters = len([x for x in alters_Lmax if x > 0])
         sum_L = np.sum(alters_Lmax)
         CCE_alters = (1.0 * n_ego_seen_alters / sum_L) * np.log2(ave_length)
-        Pi_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
+        Pi_alters = util.getPredictability(pred_length_alters, CCE_alters, e=self.epsilon)
 
         """For only this alter + ego"""
         # for only this alter and ego
@@ -1731,19 +1762,20 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         Pi_ego_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
 
         """ classify alters as helpful and useless"""
-        if CE_alter < np.log2(length_ego_uni):
+        if CE_alter < np.log2(pred_length_alter):
             group = 'helpful'
         else:
             group = 'useless'
 
         return [alter, group, rank, wb[alterid],
-                n_uniq_share_locs, n_cum_uniq_share_locs, n_ego_seen_alters,
+                n_ULI, n_CULI, n_prev_ULI, n_prev_CULI,
+                n_ego_seen_alters,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
                 ]
 
     def _ego_meetup(self, ego, tempsave=False, egoshow=False,
-                   temp_shuffle=False, social_shuffle=False):
+                    temp_shuffle=False, social_shuffle=False):
         """ Protected method: obtain all the meetup-cross-entropy info for ego
         It can save each ego's record temporarily save to csv file
         Args:
@@ -1773,16 +1805,18 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         L = [None] * N_alters
         wb = [None] * N_alters
         length_alters = [None] * N_alters
-        uniq_share_locs = [None] * N_alters
+        ULI = [None] * N_alters
+        prev_ULI = [None] * N_alters
 
         ego_stats = [self.__ego_alter_element(ego_time, ego_placeid, ego_L, alter, alters,
-                                              L, wb,
-                                              length_alters, uniq_share_locs,
+                                              L, wb, length_alters,
+                                              ULI, prev_ULI,
                                               temp_shuffle=temp_shuffle) for alter in alters]
         if temp_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
                 'userid_y', 'group', 'Included Rank_tr', 'Weight_tr',
-                'n_ULI_tr', 'n_CULI_tr', 'n_ego_seen_alters_tr',
+                'n_ULI_tr', 'n_CULI_tr', 'n_prev_ULI_tr', 'n_prev_CULI_tr',
+                'n_ego_seen_alters_tr',
                 'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
                 'Pi_alter_tr', 'Pi_alters_tr', 'Pi_ego_alter_tr', 'Pi_ego_alters_tr',
             ])
@@ -1791,7 +1825,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         elif social_shuffle:
             ego_stats = pd.DataFrame(ego_stats, columns=[
                 'userid_y', 'group', 'Included Rank_sr', 'Weight_sr',
-                'n_ULI_sr', 'n_CULI_sr', 'n_ego_seen_alters_sr',
+                'n_ULI_sr', 'n_CULI_sr', 'n_prev_ULI_sr', 'n_prev_CULI_sr',
+                'n_ego_seen_alters_sr',
                 'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
                 'Pi_alter_sr', 'Pi_alters_sr', 'Pi_ego_alter_sr', 'Pi_ego_alters_sr',
             ])
@@ -1800,7 +1835,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         else:
             ego_stats = pd.DataFrame(ego_stats, columns=[
                 'userid_y', 'group', 'Included Rank', 'Weight',
-                'n_ULI', 'n_CULI', 'n_ego_seen_alters',
+                'n_ULI', 'n_CULI', 'n_prev_ULI', 'n_prev_CULI',
+                'n_ego_seen_alters',
                 'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
                 'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
             ])
