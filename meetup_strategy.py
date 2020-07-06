@@ -1766,7 +1766,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         Pi_ego_alters = util.getPredictability(length_ego_uni, CCE_alters, e=self.epsilon)
 
         """ classify alters as helpful and useless"""
-        if CE_alter < np.log2(pred_length_alter):
+        if CE_alter < np.log2(pred_length_alter + 1e-10):
             group = 'helpful'
         else:
             group = 'useless'
