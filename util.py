@@ -193,13 +193,14 @@ def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
             L.append(l)
 
         wb = len([x for x in L if x > 0])
+        n_previous = max(PTs)
         if lambdas:
             return L
 
         if sum(L) == wb:
             return np.nan
         else:
-            return (1.0 * wb / sum(L)) * np.log2(lenW1)
+            return (1.0 * wb / sum(L)) * np.log2(n_previous)
 
 
 def network_similarity(network):
