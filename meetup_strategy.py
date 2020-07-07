@@ -1694,8 +1694,8 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         n_ULI = len(ULI[alterid])
         n_prev_ULI = len(prev_ULI[alterid])
 
-        shared_CULI = set(chain(*ULI[:alterid + 1]))
-        shared_prev_CULI = set(chain(*prev_ULI[:alterid + 1]))
+        shared_CULI = list(set(chain(*ULI[:alterid + 1])))
+        shared_prev_CULI = list(set(chain(*prev_ULI[:alterid + 1])))
 
         n_CULI = len(shared_CULI)
         n_prev_CULI = len(shared_prev_CULI)
@@ -1703,9 +1703,22 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         if self.case == 'local':
             pred_length_alter = n_prev_ULI
             pred_length_alters = n_prev_CULI
+
+            ego_placeid_seq = [x for x in ego_placeid if x in prev_ULI[alterid]]
+            ego_placeid_cum_seq = [x for x in ego_placeid if x in shared_prev_CULI]
+
         else:
             pred_length_alter = n_ULI
             pred_length_alters = n_CULI
+
+            ego_placeid_seq  = [x for x in ego_placeid if x in ULI[alterid]]
+            ego_placeid_cum_seq = [x for x in ego_placeid if x in shared_CULI]
+
+        LZ_UIL = util.uniq_LZ_entropy(ego_placeid_seq, e=self.epsilon)
+        Pi_UIL = util.getPredictability(pred_length_alter, LZ_UIL, e=self.epsilon)
+
+        LZ_CUIL = util.uniq_LZ_entropy(ego_placeid_cum_seq, e=self.epsilon)
+        Pi_CUIL = util.getPredictability(pred_length_alters, LZ_CUIL, e=self.epsilon)
 
         """ For alter"""
         if wb[alterid] == 0:
@@ -1770,14 +1783,6 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             group = 'helpful'
         else:
             group = 'useless'
-
-        ego_placeid_UIL = [x for x in ego_placeid if x in ULI[alterid]]
-        LZ_UIL = util.uniq_LZ_entropy(ego_placeid_UIL, e=self.epsilon)
-        Pi_UIL = util.getPredictability(n_ULI, LZ_UIL, e=self.epsilon)
-
-        ego_placeid_CUIL = [x for x in ego_placeid if x in prev_ULI[alterid]]
-        LZ_CUIL = util.uniq_LZ_entropy(ego_placeid_CUIL, e=self.epsilon)
-        Pi_CUIL = util.getPredictability(n_CULI, LZ_CUIL, e=self.epsilon)
 
         return [alter, group, rank, wb[alterid],
                 n_ULI, n_CULI, n_prev_ULI, n_prev_CULI,
