@@ -1772,12 +1772,12 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             group = 'useless'
 
         ego_placeid_UIL = [x for x in ego_placeid if x in ULI]
-        LZ_UIL = util.uniq_LZ_entropy(ego_placeid_UIL)
-        Pi_UIL = util.getPredictability(n_ULI, LZ_UIL)
+        LZ_UIL = util.uniq_LZ_entropy(ego_placeid_UIL, e=self.epsilon)
+        Pi_UIL = util.getPredictability(n_ULI, LZ_UIL, e=self.epsilon)
 
         ego_placeid_CUIL = [x for x in ego_placeid if x in prev_ULI]
-        LZ_CUIL = util.uniq_LZ_entropy(ego_placeid_CUIL)
-        Pi_CUIL = util.getPredictability(n_CULI, LZ_CUIL)
+        LZ_CUIL = util.uniq_LZ_entropy(ego_placeid_CUIL, e=self.epsilon)
+        Pi_CUIL = util.getPredictability(n_CULI, LZ_CUIL, e=self.epsilon)
 
         return [alter, group, rank, wb[alterid],
                 n_ULI, n_CULI, n_prev_ULI, n_prev_CULI,
