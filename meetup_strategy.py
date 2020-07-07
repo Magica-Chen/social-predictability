@@ -1771,11 +1771,20 @@ class UniqMeetupOneByOne(MeetupOneByOne):
         else:
             group = 'useless'
 
+        ego_placeid_UIL = [x for x in ego_placeid if x in ULI]
+        LZ_UIL = util.uniq_LZ_entropy(ego_placeid_UIL)
+        Pi_UIL = util.getPredictability(n_ULI, LZ_UIL)
+
+        ego_placeid_CUIL = [x for x in ego_placeid if x in prev_ULI]
+        LZ_CUIL = util.uniq_LZ_entropy(ego_placeid_CUIL)
+        Pi_CUIL = util.getPredictability(n_CULI, LZ_CUIL)
+
         return [alter, group, rank, wb[alterid],
                 n_ULI, n_CULI, n_prev_ULI, n_prev_CULI,
                 n_ego_seen_alters,
                 CE_alter, CCE_alters, CCE_ego_alter, CCE_ego_alters,
                 Pi_alter, Pi_alters, Pi_ego_alter, Pi_ego_alters,
+                LZ_UIL, Pi_UIL, LZ_CUIL, Pi_CUIL
                 ]
 
     def _ego_meetup(self, ego, tempsave=False, egoshow=False,
@@ -1823,6 +1832,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                 'n_ego_seen_alters_tr',
                 'CE_alter_tr', 'CCE_alters_tr', 'CCE_ego_alter_tr', 'CCE_ego_alters_tr',
                 'Pi_alter_tr', 'Pi_alters_tr', 'Pi_ego_alter_tr', 'Pi_ego_alters_tr',
+                'LZ_UIL_tr', 'Pi_UIL_tr', 'LZ_CUIL_tr', 'Pi_CUIL_tr'
             ])
             meetup_ego = ego_stats
             meetup_ego.insert(0, 'userid_x', ego)
@@ -1833,6 +1843,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                 'n_ego_seen_alters_sr',
                 'CE_alter_sr', 'CCE_alters_sr', 'CCE_ego_alter_sr', 'CCE_ego_alters_sr',
                 'Pi_alter_sr', 'Pi_alters_sr', 'Pi_ego_alter_sr', 'Pi_ego_alters_sr',
+                'LZ_UIL_sr', 'Pi_UIL_sr', 'LZ_CUIL_sr', 'Pi_CUIL_sr'
             ])
             meetup_ego = ego_stats
             meetup_ego.insert(0, 'userid_x', ego)
@@ -1843,6 +1854,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
                 'n_ego_seen_alters',
                 'CE_alter', 'CCE_alters', 'CCE_ego_alter', 'CCE_ego_alters',
                 'Pi_alter', 'Pi_alters', 'Pi_ego_alter', 'Pi_ego_alters',
+                'LZ_UIL', 'Pi_UIL', 'LZ_CUIL', 'Pi_CUIL'
             ])
 
             # combine two parts of meetup information
