@@ -579,7 +579,7 @@ class MeetupOneByOne(Meetup):
         return meetup_ego
 
     def ego_alter_info(self, start=0, end=None, filesave=False, verbose=False,
-                       temp_shuffle=False, social_shuffle=False):
+                       temp_shuffle=False, social_shuffle=False, name='wp'):
         """ Produce all the ego-alter information
         Args:
             start: int, the user started in the userlist, default is 0,
@@ -588,7 +588,7 @@ class MeetupOneByOne(Meetup):
             verbose: bool, whether print the ego in step
             temp_shuffle: bool, whether do the temp_shuffle
             social_shuffle: bool, whether do the social shuffle
-
+            name: string
         Return:
             user_stats, and also add to the class self oject, self.user_stats
         """
@@ -606,30 +606,30 @@ class MeetupOneByOne(Meetup):
             self.tr_user_stats = user_stats
             # save the file
             if filesave:
-                name = 'user-meetup-info-tr-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-meetup-info-tr-' + str(self.n_meetupers) + '.csv'
                 user_stats.to_csv(name, index=False)
         elif social_shuffle:
             self.sr_user_stats = user_stats
             # save the file
             if filesave:
-                name = 'user-meetup-info-sr-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-meetup-info-sr-' + str(self.n_meetupers) + '.csv'
                 user_stats.to_csv(name, index=False)
         else:
             self.user_stats = user_stats
             # save the file
             if filesave:
-                name = 'user-meetup-info-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-meetup-info-' + str(self.n_meetupers) + '.csv'
                 user_stats.to_csv(name, index=False)
 
         return user_stats
 
-    def ego_info(self, start=0, end=None, filesave=False):
+    def ego_info(self, start=0, end=None, filesave=False, name='wp'):
         """ Produce all information only related to ego
         Args:
             start: int, the user started in the userlist, default is 0,
             end: int, the user ended in the userlist, default is the whole dataset
             filesave: bool, whether save the file to csv file
-
+            name: string
         Return:
             ego_stats, and also add to the class self oject, self.ego_stats
         """
@@ -662,7 +662,7 @@ class MeetupOneByOne(Meetup):
                                   )
             self.ego_stats = df_ego.merge(df_alters, on='userid_x')
             if filesave:
-                name = 'user-ego-info-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-ego-info-' + str(self.n_meetupers) + '.csv'
                 self.ego_stats.to_csv(name, index=False)
 
         if self.tr_user_stats is not None:
@@ -677,7 +677,7 @@ class MeetupOneByOne(Meetup):
                                      )
             self.tr_ego_stats = df_ego.merge(df_alters_tr, on='userid_x')
             if filesave:
-                name = 'user-ego-info-tr-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-ego-info-tr-' + str(self.n_meetupers) + '.csv'
                 self.tr_ego_stats.to_csv(name, index=False)
 
         if self.sr_user_stats is not None:
@@ -692,16 +692,17 @@ class MeetupOneByOne(Meetup):
                                      )
             self.sr_ego_stats = df_ego.merge(df_alters_sr, on='userid_x')
             if filesave:
-                name = 'user-ego-info-sr-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-ego-info-sr-' + str(self.n_meetupers) + '.csv'
                 self.sr_ego_stats.to_csv(name, index=False)
 
         return self.ego_stats, self.tr_ego_stats, self.sr_ego_stats
 
-    def merge_stats(self, control=False, filesave=False):
+    def merge_stats(self, control=False, filesave=False, name='wp'):
         """merge all user-stats and ego-stats if they exist
         Args:
             filesave: whether save the final merged file
             control: whether have temporal and social control
+            name: string
         Return:
             ego+alters all information
         """
@@ -712,7 +713,7 @@ class MeetupOneByOne(Meetup):
                                                         'Pi_alters', 'Pi_ego_alters']),
                     how='left', on=['userid_x'])
                 if filesave:
-                    name = 'user-meetup-all-' + str(self.n_meetupers) + '.csv'
+                    name = name + '_user-meetup-all-' + str(self.n_meetupers) + '.csv'
                     ego_alter_stats.to_csv(name, index=False)
 
                 return ego_alter_stats
@@ -727,7 +728,7 @@ class MeetupOneByOne(Meetup):
             self.user_stats_all = all_merge.rename(columns={'userid_x_x': 'userid'})
 
             if filesave:
-                name = 'user-meetup-info-all-' + str(self.n_meetupers) + '.csv'
+                name = name + '_user-meetup-info-all-' + str(self.n_meetupers) + '.csv'
                 self.user_stats_all.to_csv(name, index=False)
 
             if all(v is not None for v in [self.ego_stats, self.tr_ego_stats, self.sr_ego_stats]):
@@ -737,7 +738,7 @@ class MeetupOneByOne(Meetup):
                                                                                  'Pi']).merge(
                     self.sr_ego_stats, on=['userid_x', 'ego_info', 'LZ_entropy', 'Pi'])
                 if filesave:
-                    name = 'user-ego-info-all-' + str(self.n_meetupers) + '.csv'
+                    name = name + '_user-ego-info-all-' + str(self.n_meetupers) + '.csv'
                     self.ego_stats_all.to_csv(name, index=False)
 
     def find_meetup_details(self, ego):
@@ -1379,9 +1380,10 @@ class MeetupCrossValid(MeetupWhole):
         self.egolist = list(set(user_meetup['userid_x'].tolist()))
         return self.egolist
 
-    def ego_info(self, n_shown=10, verbose=False, filesave=False):
+    def ego_info(self, n_shown=10, verbose=False, filesave=False, name='wp'):
         """
         Combine all egos and all time delays as a dataframe
+        :param name: string
         :param n_shown: just show n_shown included alters
         :param filesave: whether save the results in csv file
         :param verbose: whether display the step
@@ -1394,7 +1396,7 @@ class MeetupCrossValid(MeetupWhole):
         self.cross_info = ego_alters
 
         if filesave:
-            name = 'MeetupCrossValidation.csv'
+            name = name + '_MeetupCrossValidation.csv'
             self.cross_info.to_csv(name, index=False)
 
         return self.cross_info
@@ -1551,7 +1553,7 @@ class FriendNetwork(Meetup):
 
         return friendship
 
-    def ego_info(self, case='local', verbose=False, filesave=False):
+    def ego_info(self, case='local', verbose=False, filesave=False, name='wp'):
         """ concat the friendship network for all users
         :return: merged dataframe with all the friendship network information
         """
@@ -1563,7 +1565,7 @@ class FriendNetwork(Meetup):
         self.total_meetup = friendship_network.merge(n_friends, how='left', on='userid_x')
 
         if filesave:
-            filename = 'True-Friendship-details.csv'
+            filename = name + '_True-Friendship-details.csv'
             self.total_meetup.to_csv(filename, index=False)
 
         return self.total_meetup
