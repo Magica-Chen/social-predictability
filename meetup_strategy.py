@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # entropy_functions.py
-# (c) Zexun Chen, 2020-03-20
+# (c) Zexun Chen, 2020-07-23
 # sxtpy2010@gmail.com
 
 import pandas as pd
@@ -16,6 +16,8 @@ from preprocessing import geo2id, pre_processing
 import util
 from itertools import combinations
 from itertools import chain
+from collections import Counter
+from collections import OrderedDict
 
 SEED = 2020  # set random seed for our random function
 
@@ -31,7 +33,6 @@ class Meetup(object):
         :arg mins_records: the required min number of records for each user
         :arg geoid: whether use geo-coordinates id than placeid
         :arg resolution: if geoid is true, what resolution will be used
-        :arg path: string, the location of csv dataset
         :arg epsilon, the shortest length required for predictability computation
         """
         # rdata means raw dataset and pdata means processed dataset
@@ -1873,3 +1874,107 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             print(ego)
 
         return meetup_ego
+
+
+class GeneralisedMeetup(Meetup):
+    def __init__(self, path, mins_records=200,
+                 time_delta=36000, placeidT = None,
+                 geoid=False, resolution=None, epsilon=2
+                 ):
+        """ Generalised Meetup Friendship Network
+        :arg path: path of source file
+        :arg mins_records: the required min number of records for each user
+        :arg geoid: whether use geo-coordinates id than placeid
+        :arg resolution: if geoid is true, what resolution will be used
+        :arg epsilon, the shortest length required for predictability computation
+        :arg time_delta: bool or int, generalised range of "meetup"
+
+        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
+        in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
+        """
+        super(GeneralisedMeetup, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        self.placeidT = placeidT
+        self.time_delta = time_delta
+
+    def __find_dynamic_USP_pair(self, ego, seq_ego_time, seq_ego_placeid, alter):
+        alter_info = self.placeidT[alter]
+        seq_alter_placeid = alter_info['placeid'].tolist()
+
+        if self.time_delta == 0:
+            seq_alter_time = alter_info.index.floor('H').tolist()
+            # remove the duplicates
+            interim = OrderedDict.fromkeys(zip(seq_alter_time, seq_alter_placeid))
+            seq_alter_time = [k[0] for k in interim]
+            seq_alter_placeid = [k[1] for k in interim]
+        else:
+            seq_alter_time = alter_info.index.tolist()
+
+        dynamic_USP_pair = []
+        count_result = Counter()
+        for t, w in zip(seq_ego_time, seq_ego_placeid):
+            raw_count = seq_alter_placeid.count(w)
+            if raw_count > 0:
+                # find the corresponding time where has the shared location
+                if self.time_delta == 0:
+                    t = t.floor('H')
+                start_time = t + timedelta(seconds=-self.time_delta)
+                end_time = t + timedelta(seconds=self.time_delta)
+                count_result[w] += sum([1 for i, val in enumerate(seq_alter_placeid)
+                                        if (val == w) & (seq_alter_time[i] >= start_time) & (
+                                                    seq_alter_time[i] <= end_time)])
+
+        count_tuple = count_result.most_common()
+        for x in count_tuple:
+            if x[1] > 0:
+                dynamic_USP_pair.append([ego, alter, x[0], x[1]])
+        return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
+
+    def __find_static_USP(self, ego, seq_ego_placeid, alter,):
+        alter_info = self.placeidT[alter]
+        seq_alter_placeid = alter_info['placeid'].tolist()
+
+        count_result = Counter()
+        for w in seq_ego_placeid:
+            count_result[w] += seq_alter_placeid.count(w)
+
+        count_tuple = count_result.most_common()
+        static_USP_pair = []
+        for x in count_tuple:
+            if x[1] > 0:
+                static_USP_pair.append([ego, alter, x[0], x[1]])
+        return pd.DataFrame(static_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
+
+    def _find_generalised_meetup(self, ego, verbose=False):
+        userlist = self.userlist
+        if self.placeidT is None:
+            self.temporal_placeid()
+
+        ego_info = self.placeidT[ego]
+        seq_ego_placeid = ego_info['placeid'].tolist()
+        seq_ego_time = ego_info.index.tolist()
+
+        alterlist = userlist[:]
+        alterlist.remove(ego)
+
+        """ If time_delta is not None, we will consider dynamic unique shared placeid, otherwise static"""
+        if self.time_delta:
+            df_list = [self.__find_dynamic_USP_pair(ego, seq_ego_time, seq_ego_placeid, alter)
+                       for alter in alterlist]
+        else:
+            df_list = [self.__find_static_USP(ego, seq_ego_placeid, alter)
+                       for alter in alterlist]
+
+        if verbose:
+            print(ego)
+
+        return pd.concat(df_list)
+
+    def find_all_generalised_meetup(self, verbose=False, filesave=False):
+        all_list = [self._find_generalised_meetup(ego, verbose) for ego in self.userlist]
+        GMFN = pd.concat(all_list)
+        self.user_meetup = GMFN
+        if filesave:
+            file_name = 'GeneralisedMFN_' + str(self.time_delta) + '.csv'
+            GMFN.to_csv(file_name, index=False)
+
+        return self.user_meetup
