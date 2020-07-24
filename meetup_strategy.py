@@ -2037,7 +2037,12 @@ class FastOneByOne(Meetup):
         CE_alter = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs, e=self.epsilon)
         Pi_alter = util.getPredictability(N=N_uniq_ego, S=CE_alter, e=self.epsilon)
 
-        return [alter, CE_alter, Pi_alter]
+        if CE_alter < np.log2(N_uniq_ego):
+            group = 'useful'
+        else:
+            group = 'useless'
+
+        return [alter, group, CE_alter, Pi_alter]
 
     def _CE_ego(self, ego, verbose=False):
         ego_time = self.placeidT[ego].index.tolist()
@@ -2047,7 +2052,7 @@ class FastOneByOne(Meetup):
         alters = self.total_meetup[self.total_meetup['userid_x'] == ego]['userid_y'].tolist()
 
         ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
-        df_ego = pd.DataFrame(ego_result_list, columns=['alter', 'CE_alter', 'Pi_alter'])
+        df_ego = pd.DataFrame(ego_result_list, columns=['alter', 'group', 'CE_alter', 'Pi_alter'])
         df_ego.insert(0, 'ego', ego)
         LZ = util.LZ_entropy(ego_placeid, e=self.epsilon)
         df_ego['LZ'] = LZ
