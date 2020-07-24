@@ -1988,14 +1988,14 @@ class FastOneByOne(Meetup):
     """
 
     def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 total_meetup=None, placeidT=None,
+                 user_meetup=None, total_meetup=None, placeidT=None, n_previous=200,
                  name='wp'):
         """ MeetupOneByOne needs to have several important inputs
         Arg:
             path, mins_records, geoid, resolution are from the mother class Meetup
             n_meetupers: int, the number of meetupers we set
             n_previous: int, the number of checkins is required
-            user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
+            user_meetup: DataFrame, cols = ['userid_x', 'userid_y']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
 
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
@@ -2007,10 +2007,16 @@ class FastOneByOne(Meetup):
         if total_meetup is not None:
             self.total_meetup = total_meetup
 
-        self.egolist = sorted(list(set(self.total_meetup['userid_x'].tolist())))
-        self.alterlist = sorted(list(set(self.total_meetup['userid_y'].tolist())))
-        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
-        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+        if user_meetup is None:
+            self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=n_previous)
+        else:
+            self.user_meetup = user_meetup
+            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
+            # alterlist, userlist and pdata.
+            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
+            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
+            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
             self.placeidT = self.temporal_placeid()
