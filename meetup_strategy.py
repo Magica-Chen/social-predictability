@@ -1714,7 +1714,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
             pred_length_alter = n_ULI
             pred_length_alters = n_CULI
 
-            ego_placeid_seq  = [x for x in ego_placeid if x in ULI[alterid]]
+            ego_placeid_seq = [x for x in ego_placeid if x in ULI[alterid]]
             ego_placeid_cum_seq = [x for x in ego_placeid if x in shared_CULI]
 
         LZ_UIL = util.uniq_LZ_entropy(ego_placeid_seq, e=self.epsilon)
@@ -1880,7 +1880,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
 
 class GeneralisedMeetup(Meetup):
     def __init__(self, path, mins_records=200,
-                 time_delta=36000, placeidT = None,
+                 time_delta=36000, placeidT=None,
                  geoid=False, resolution=None, epsilon=2
                  ):
         """ Generalised Meetup Friendship Network
@@ -1923,7 +1923,7 @@ class GeneralisedMeetup(Meetup):
                 end_time = t + timedelta(seconds=self.time_delta)
                 count_result[w] += sum([1 for i, val in enumerate(seq_alter_placeid)
                                         if (val == w) & (seq_alter_time[i] >= start_time) & (
-                                                    seq_alter_time[i] <= end_time)])
+                                                seq_alter_time[i] <= end_time)])
 
         count_tuple = count_result.most_common()
         for x in count_tuple:
@@ -1931,7 +1931,7 @@ class GeneralisedMeetup(Meetup):
                 dynamic_USP_pair.append([ego, alter, x[0], x[1]])
         return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
 
-    def __find_static_USP(self, ego, seq_ego_placeid, alter,):
+    def __find_static_USP(self, ego, seq_ego_placeid, alter, ):
         alter_info = self.placeidT[alter]
         seq_alter_placeid = alter_info['placeid'].tolist()
 
@@ -1980,3 +1980,87 @@ class GeneralisedMeetup(Meetup):
             GMFN.to_csv(file_name, index=False)
 
         return self.user_meetup
+
+
+class FastOneByOne(Meetup):
+    """
+    Create a fast way to compute one by one cross entropy and cros predictability
+    """
+
+    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 total_meetup=None, placeidT=None,
+                 name='wp'):
+        """ MeetupOneByOne needs to have several important inputs
+        Arg:
+            path, mins_records, geoid, resolution are from the mother class Meetup
+            n_meetupers: int, the number of meetupers we set
+            n_previous: int, the number of checkins is required
+            user_meetup: DataFrame, cols = ['userid_x', 'userid_y', 'meetup', 'percentage']
+            placeidT: dict, include all the users' temporal placeid, keys are the userids
+
+        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
+        in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
+        """
+        super(FastOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        self.epsilon = epsilon
+        self.name = name
+        if total_meetup is not None:
+            self.total_meetup = total_meetup
+
+        self.egolist = sorted(list(set(self.total_meetup['userid_x'].tolist())))
+        self.alterlist = sorted(list(set(self.total_meetup['userid_y'].tolist())))
+        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+
+        if placeidT is None:
+            self.placeidT = self.temporal_placeid()
+        else:
+            self.placeidT = placeidT
+
+        self.user_stats = None
+
+    def __CE_ego_alter(self, ego_time, ego_placeid, alter):
+        N_uniq_ego = len(set(ego_placeid))
+
+        alter_time = self.placeidT[alter].index.tolist()
+        alter_placeid = self.placeidT[alter]['placeid'].tolist()
+
+        total_time = sorted(ego_time + alter_time)
+
+        PTs = [(total_time.index(x) - ego_time.index(x)) for x in ego_time]
+        CE_alter = util.LZ_cross_entropy(alter_placeid, ego_placeid, PTs, e=self.epsilon)
+        Pi_alter = util.getPredictability(N=N_uniq_ego, S=CE_alter, e=self.epsilon)
+
+        return [alter, CE_alter, Pi_alter]
+
+    def _CE_ego(self, ego, verbose=False):
+        ego_time = self.placeidT[ego].index.tolist()
+        ego_placeid = self.placeidT[ego]['placeid'].tolist()
+        N_uniq_ego = len(set(ego_placeid))
+
+        alters = self.total_meetup[self.total_meetup['userid_x'] == ego]['userid_y'].tolist()
+
+        ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
+        df_ego = pd.DataFrame(ego_result_list, columns=['alter', 'CE_alter', 'Pi_alter'])
+        df_ego.insert(0, 'ego', ego)
+        LZ = util.LZ_entropy(ego_placeid, e=self.epsilon)
+        df_ego['LZ'] = LZ
+        df_ego['Pi'] = util.getPredictability(N=N_uniq_ego, S=LZ, e=self.epsilon)
+
+        if verbose:
+            print(ego)
+            name = self.name + 'print_ego.txt'
+            with open(name, 'a+') as outfile:
+                outfile.write(ego + '\n')
+        return df_ego
+
+    def find_cross_entropy(self, verbose=False, filesave=False):
+
+        df_full = [self._CE_ego(ego, verbose) for ego in self.egolist]
+        self.user_stats = pd.concat(df_full)
+
+        if filesave:
+            name = self.name + '_CE.csv'
+            self.user_stats.to_csv(name, index=False)
+
+        return self.user_stats
