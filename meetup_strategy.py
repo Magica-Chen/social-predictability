@@ -2057,7 +2057,7 @@ class FastOneByOne(Meetup):
             print(ego)
             name = self.name + 'print_ego.txt'
             with open(name, 'a+') as outfile:
-                outfile.write(ego + '\n')
+                outfile.write(str(ego) + '\n')
         return df_ego
 
     def find_cross_entropy(self, verbose=False, filesave=False):
