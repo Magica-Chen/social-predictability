@@ -81,6 +81,9 @@ class Meetup(object):
         ego_end = self._extract_datetime(ego, latest=True)
 
         df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid', 'datetimeH']]
+        df_alters = df_alters[(df_alters['datetimeH'].isin(df_ego['datetimeH'])) &
+                              (df_alters['placeid'].isin(df_ego['placeid']))
+                              ]
 
         """ Here meetup means two users appear in the same placeid at the same time, so we merge two 
         dataframes, keep on placeid and datatime, if they meet, it will be complete row record, 
