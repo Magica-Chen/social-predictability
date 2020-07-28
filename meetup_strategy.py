@@ -96,12 +96,12 @@ class Meetup(object):
             .reset_index(name='count').sort_values(by=['count', 'userid_y'], ascending=[False, True])
 
         # compute the percentage
-        meetup[['percent']] = meetup[['count']] / meetup['count'].sum()
+        # meetup[['percent']] = meetup[['count']] / meetup['count'].sum()
 
         alterlist = meetup['userid_y'].tolist()
         alters_former = [self._former_count(ego_end, alter) for alter in alterlist]
         meetup['N_previous'] = np.array(alters_former)
-        meetup['N_alter'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
+        # meetup['N_alter'] = np.array([len(self.placeidT[alter]) for alter in alterlist])
 
         return meetup
 
