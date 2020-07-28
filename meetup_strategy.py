@@ -282,14 +282,14 @@ class Meetup(object):
         :param ego_time: list of pd.timestamp
         :param alter_time: list of pd.timestamp
         :return: the number of points of alter_time happen no later than last ego time
-                if False, use previous, if True, use no previous
+                if False, not use previous, if True, use previous. Default is False
         """
         if previous:
-            return len(alter_time)
-        else:
             ego_end = pd.to_datetime(ego_time).to_pydatetime().tolist()[-1]
             time_alters = pd.to_datetime(alter_time).to_pydatetime().tolist()
             return sum([x <= ego_end for x in time_alters])
+        else:
+            return len(alter_time)
 
 
 class MeetupOneByOne(Meetup):
