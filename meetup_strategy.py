@@ -282,6 +282,7 @@ class Meetup(object):
         :param ego_time: list of pd.timestamp
         :param alter_time: list of pd.timestamp
         :return: the number of points of alter_time happen no later than last ego time
+                if False, use previous, if True, use no previous
         """
         if previous:
             return len(alter_time)
@@ -2033,6 +2034,7 @@ class FastOneByOne(Meetup):
 
         alter_time = self.placeidT[alter].index.tolist()
         alter_placeid = self.placeidT[alter]['placeid'].tolist()
+        n_previous = self._length_former(ego_time, alter_time)
 
         total_time = sorted(ego_time + alter_time)
 
@@ -2045,7 +2047,7 @@ class FastOneByOne(Meetup):
         else:
             group = 'useless'
 
-        return [alter, group, CE_alter, Pi_alter]
+        return [alter, group, CE_alter, Pi_alter, n_previous]
 
     def _CE_ego(self, ego, verbose=False):
         ego_time = self.placeidT[ego].index.tolist()
@@ -2055,7 +2057,9 @@ class FastOneByOne(Meetup):
         alters = self.total_meetup[self.total_meetup['userid_x'] == ego]['userid_y'].tolist()
 
         ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
-        df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group', 'CE_alter', 'Pi_alter'])
+        df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group',
+                                                        'CE_alter', 'Pi_alter',
+                                                        'N_previous'])
         df_ego.insert(0, 'userid_x', ego)
         LZ = util.LZ_entropy(ego_placeid, e=self.epsilon)
         df_ego['LZ'] = LZ
