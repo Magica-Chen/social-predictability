@@ -112,9 +112,10 @@ class Meetup(object):
         meetup_list = [self.find_meetup(user) for user in self.userlist]
         user_meetup = pd.concat(meetup_list, sort=False)
         user_meetup = user_meetup.rename(columns={'count': 'meetup'})
-        n_user_meetup = user_meetup.groupby('userid_x').size().reset_index(name='count')
-        n_user_meetup.columns = ['userid_y', 'n_alter_meetupers']
-        self.total_meetup = user_meetup.merge(n_user_meetup, how='left', on='userid_y')
+        self.total_meetup = user_meetup
+        # n_user_meetup = user_meetup.groupby('userid_x').size().reset_index(name='count')
+        # n_user_meetup.columns = ['userid_y', 'n_alter_meetupers']
+        # self.total_meetup = user_meetup.merge(n_user_meetup, how='left', on='userid_y')
 
         return self.total_meetup
 
