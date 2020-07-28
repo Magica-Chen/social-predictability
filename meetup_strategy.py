@@ -1991,15 +1991,14 @@ class FastOneByOne(Meetup):
     Create a fast way to compute one by one cross entropy and cros predictability
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 user_meetup=None, total_meetup=None, placeidT=None, n_previous=200,
+    def __init__(self, path, network, mins_records=200, geoid=False, resolution=None, epsilon=2,
+                 placeidT=None,
                  name='wp'):
         """ MeetupOneByOne needs to have several important inputs
         Arg:
             path, mins_records, geoid, resolution are from the mother class Meetup
             n_meetupers: int, the number of meetupers we set
-            n_previous: int, the number of checkins is required
-            user_meetup: DataFrame, cols = ['userid_x', 'userid_y']
+            network: DataFrame, cols = ['userid_x', 'userid_y']
             placeidT: dict, include all the users' temporal placeid, keys are the userids
 
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
@@ -2008,19 +2007,12 @@ class FastOneByOne(Meetup):
         super(FastOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
         self.epsilon = epsilon
         self.name = name
-        if total_meetup is not None:
-            self.total_meetup = total_meetup
+        self.network = network
 
-        if user_meetup is None:
-            self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=n_previous)
-        else:
-            self.user_meetup = user_meetup
-            # if user_meetup is given directly rather than generating automatically, we have to update egolist,
-            # alterlist, userlist and pdata.
-            self.egolist = sorted(list(set(self.user_meetup['userid_x'].tolist())))
-            self.alterlist = sorted(list(set(self.user_meetup['userid_y'].tolist())))
-            self.userlist = sorted(list(set(self.egolist + self.alterlist)))
-            self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
+        self.egolist = sorted(list(set(self.network['userid_x'].tolist())))
+        self.alterlist = sorted(list(set(self.network['userid_y'].tolist())))
+        self.userlist = sorted(list(set(self.egolist + self.alterlist)))
+        self.pdata = self.pdata[self.pdata['userid'].isin(self.userlist)]
 
         if placeidT is None:
             self.placeidT = self.temporal_placeid()
@@ -2054,7 +2046,7 @@ class FastOneByOne(Meetup):
         ego_placeid = self.placeidT[ego]['placeid'].tolist()
         N_uniq_ego = len(set(ego_placeid))
 
-        alters = self.total_meetup[self.total_meetup['userid_x'] == ego]['userid_y'].tolist()
+        alters = self.network[self.network['userid_x'] == ego]['userid_y'].tolist()
 
         ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
         df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group',
