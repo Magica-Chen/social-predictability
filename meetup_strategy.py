@@ -1904,7 +1904,7 @@ class GeneralisedMeetup(Meetup):
 
     def __find_dynamic_USP_pair(self, ego, seq_ego_time, seq_ego_placeid, alter):
         alter_info = self.placeidT[alter]
-        seq_alter_placeid = alter_info['placeid'].tolist()
+        seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
 
         if self.time_delta == 0:
             seq_alter_time = alter_info.index.floor('H').tolist()
@@ -1937,7 +1937,7 @@ class GeneralisedMeetup(Meetup):
 
     def __find_static_USP(self, ego, seq_ego_placeid, alter, ):
         alter_info = self.placeidT[alter]
-        seq_alter_placeid = alter_info['placeid'].tolist()
+        seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
 
         count_result = Counter()
         for w in seq_ego_placeid:
@@ -1956,7 +1956,7 @@ class GeneralisedMeetup(Meetup):
             self.temporal_placeid()
 
         ego_info = self.placeidT[ego]
-        seq_ego_placeid = ego_info['placeid'].tolist()
+        seq_ego_placeid = ego_info['placeid'].astype(str).values.tolist()
         seq_ego_time = ego_info.index.tolist()
 
         alterlist = userlist[:]
@@ -2025,7 +2025,7 @@ class FastOneByOne(Meetup):
         N_uniq_ego = len(set(ego_placeid))
 
         alter_time = self.placeidT[alter].index.tolist()
-        alter_placeid = self.placeidT[alter]['placeid'].tolist()
+        alter_placeid = self.placeidT[alter]['placeid'].astype(str).values.tolist()
         n_previous = self._length_former(ego_time, alter_time, previous=True)
 
         total_time = sorted(ego_time + alter_time)
@@ -2043,7 +2043,7 @@ class FastOneByOne(Meetup):
 
     def _CE_ego(self, ego, verbose=False):
         ego_time = self.placeidT[ego].index.tolist()
-        ego_placeid = self.placeidT[ego]['placeid'].tolist()
+        ego_placeid = self.placeidT[ego]['placeid'].astype(str).values.tolist()
         N_uniq_ego = len(set(ego_placeid))
 
         alters = self.network[self.network['userid_x'] == ego]['userid_y'].tolist()
