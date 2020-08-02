@@ -173,7 +173,7 @@ class Meetup(object):
 
         user_temporal_placeid = self.placeidT[user]
         user_time = pd.to_datetime(user_temporal_placeid.index).tolist()
-        user_placeid = user_temporal_placeid['placeid'].tolist()
+        user_placeid = user_temporal_placeid['placeid'].astype(str).values.tolist()
         N_uniq_placeid = len(set(user_placeid))
         N_placeid = len(user_placeid)
 
