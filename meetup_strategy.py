@@ -27,9 +27,11 @@ class Meetup(object):
     Create a Meetup class to extract useful information from raw csv dataset
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2):
+    def __init__(self, path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2):
         """
         :arg path: path of source file
+        :arg freq: when comparing timestamp, which scale we use
         :arg mins_records: the required min number of records for each user
         :arg geoid: whether use geo-coordinates id than placeid
         :arg resolution: if geoid is true, what resolution will be used
@@ -39,7 +41,7 @@ class Meetup(object):
         # since we only needs userid, placieid and datetime in our computation,
         # so these attributes are required.
         self.rdata = pd.read_csv(path)
-        self.pdata = pre_processing(self.rdata, min_records=mins_records,
+        self.pdata = pre_processing(self.rdata, min_records=mins_records, freq=freq,
                                     geoid=geoid, resolution=resolution)
         # all the following computations are based on processed data
         self.userlist = sorted(list(set(self.pdata['userid'].tolist())))
@@ -297,7 +299,8 @@ class MeetupOneByOne(Meetup):
     Create a Meetup Strategy class based on Meetup class to include all the computation
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  n_meetupers=100, n_previous=200,
                  user_meetup=None, total_meetup=None, placeidT=None):
         """ MeetupOneByOne needs to have several important inputs
@@ -311,7 +314,7 @@ class MeetupOneByOne(Meetup):
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
         """
-        super(MeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(MeetupOneByOne, self).__init__(path, mins_records, freq, geoid, resolution, epsilon)
         if total_meetup is not None:
             self.total_meetup = total_meetup
 
@@ -1005,7 +1008,8 @@ class MeetupWhole(Meetup):
     Create a Meetup (statistics) class based on Meetup class to include all the computation
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  n_previous=200,
                  user_meetup=None, total_meetup=None, placeidT=None):
         """
@@ -1021,7 +1025,7 @@ class MeetupWhole(Meetup):
         :param placeidT: Dict, indexed by ego id and contains all temporal visitations
         """
 
-        super(MeetupWhole, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(MeetupWhole, self).__init__(path, mins_records, freq, geoid, resolution, epsilon)
         self.ego_stats = None
         self.ego_stats_gender = None
 
@@ -1165,13 +1169,14 @@ class MeetupGender(MeetupWhole):
     Meetup Strategy focusing on Gender aspect
     """
 
-    def __init__(self, path, gender_path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, gender_path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  n_previous=200,
                  user_meetup=None, total_meetup=None, placeidT=None):
         """
         All inputs are from the father class MeetupWhole and MeetupOneByOne
         """
-        super(MeetupGender, self).__init__(path, mins_records, geoid, resolution, epsilon,
+        super(MeetupGender, self).__init__(path, mins_records, freq, geoid, resolution, epsilon,
                                            n_previous,
                                            user_meetup,
                                            total_meetup,
@@ -1364,13 +1369,15 @@ class MeetupCrossValid(MeetupWhole):
     Meetup Strategy focusing on adding alters by cross-validation
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  n_previous=200,
                  user_meetup=None, total_meetup=None, placeidT=None):
         """
         All inputs are from the father class MeetupWhole and MeetupOneByOne
         """
-        super(MeetupCrossValid, self).__init__(path, mins_records, geoid, resolution, epsilon,
+        super(MeetupCrossValid, self).__init__(path, mins_records, freq,
+                                               geoid, resolution, epsilon,
                                                n_previous,
                                                user_meetup,
                                                total_meetup,
@@ -1476,7 +1483,8 @@ class FriendNetwork(Meetup):
     Create a true friendship network class to see the predictability
     """
 
-    def __init__(self, path, friend_network, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, friend_network, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  placeidT=None, unique=False):
         """
         Arg:
@@ -1485,7 +1493,7 @@ class FriendNetwork(Meetup):
             placeidT: dict, include all the users' temporal placeid, keys are the userids
 
         """
-        super(FriendNetwork, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(FriendNetwork, self).__init__(path, mins_records, freq, geoid, resolution, epsilon)
 
         self.total_meetup = friend_network.copy()
         self.user_meetup = friend_network.copy()
@@ -1634,10 +1642,12 @@ class UniqMeetupOneByOne(MeetupOneByOne):
     Create a UniqMeetupOneByOne strategy to use util.uniq_LZ_entropy and util.uniq_LZ_cross_entropy
     """
 
-    def __init__(self, path, mins_records=200, geoid=False, resolution=None, epsilon=2,
-                 n_meetupers=None, n_previous=200, case='local',
+    def __init__(self, path, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
+                 n_meetupers=None, n_previous=150, case='local',
                  user_meetup=None, total_meetup=None, placeidT=None):
-        super(UniqMeetupOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon,
+        super(UniqMeetupOneByOne, self).__init__(path, mins_records, freq,
+                                                 geoid, resolution, epsilon,
                                                  n_meetupers, n_previous,
                                                  user_meetup, total_meetup, placeidT)
         self.case = case
@@ -1883,7 +1893,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
 
 
 class GeneralisedMeetup(Meetup):
-    def __init__(self, path, mins_records=200,
+    def __init__(self, path, mins_records=150, freq='H',
                  time_delta=36000, placeidT=None,
                  geoid=False, resolution=None, epsilon=2
                  ):
@@ -1898,7 +1908,8 @@ class GeneralisedMeetup(Meetup):
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
         """
-        super(GeneralisedMeetup, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(GeneralisedMeetup, self).__init__(path, mins_records, freq,
+                                                geoid, resolution, epsilon)
         self.placeidT = placeidT
         self.time_delta = time_delta
 
@@ -1993,7 +2004,8 @@ class FastOneByOne(Meetup):
     Create a fast way to compute one by one cross entropy and cros predictability
     """
 
-    def __init__(self, path, network, mins_records=200, geoid=False, resolution=None, epsilon=2,
+    def __init__(self, path, network, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
                  placeidT=None,
                  name='wp'):
         """ MeetupOneByOne needs to have several important inputs
@@ -2006,7 +2018,8 @@ class FastOneByOne(Meetup):
         Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
         in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
         """
-        super(FastOneByOne, self).__init__(path, mins_records, geoid, resolution, epsilon)
+        super(FastOneByOne, self).__init__(path, mins_records, freq,
+                                           geoid, resolution, epsilon)
         self.epsilon = epsilon
         self.name = name
         self.network = network

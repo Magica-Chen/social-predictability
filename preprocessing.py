@@ -26,8 +26,10 @@ def geo2id(df, resolution=None, lat='lat', lon='lon'):
     return df.merge(df_new, how='left', on=[lat, lon])
 
 
-def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolution=4):
+def pre_processing(df_raw, min_records=150, freq='H',
+                   filesave=False, geoid=False, resolution=4):
     """ pre-processing the given dataset
+    :param freq: default 'H', we can use 'D' for day, 'M' for month, 'W' for week
     :param df_raw: dataframe, raw dataset
     :param min_records: the min requirement of users' records, remove all invalid users' information.
     :param filesave: whether save the pre-processed results
@@ -43,9 +45,11 @@ def pre_processing(df_raw, min_records=200, filesave=False, geoid=False, resolut
     df = df_wp.groupby('userid')['datetime'].count().reset_index(name='count')
     mask1 = df['count'].values >= min_records
     user = pd.DataFrame(df.values[mask1], df.index[mask1], df.columns)['userid'].tolist()
-    # for computation, ignore minutes and seconds
+    # for computation, ignore minutes and seconds (hourly-based)
+    # we still have many choice, day, week, month level
     df_wp['datetime'] = pd.to_datetime(df_wp['datetime'])
-    df_wp['datetimeH'] = pd.to_datetime(df_wp['datetime']).dt.floor('H')
+    df_wp['datetimeH'] = pd.to_datetime(df_wp['datetime']).dt.floor(freq)
+
     df_processed = df_wp[df_wp['userid'].isin(user)]
 
     if geoid:
