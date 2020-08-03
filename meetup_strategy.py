@@ -1915,7 +1915,6 @@ class GeneralisedMeetup(Meetup):
         else:
             seq_alter_time = alter_info.index.tolist()
 
-        dynamic_USP_pair = []
         count_result = Counter()
         for t, w in zip(seq_ego_time, seq_ego_placeid):
             raw_count = seq_alter_placeid.count(w)
@@ -1930,9 +1929,10 @@ class GeneralisedMeetup(Meetup):
                                                 seq_alter_time[i] <= end_time)])
 
         count_tuple = count_result.most_common()
-        for x in count_tuple:
-            if x[1] > 0:
-                dynamic_USP_pair.append([ego, alter, x[0], x[1]])
+        dynamic_USP_pair = [[ego, alter, x[0], x[1]] for x in count_tuple if x[1] > 0]
+        # for x in count_tuple:
+        #     if x[1] > 0:
+        #         dynamic_USP_pair.append([ego, alter, x[0], x[1]])
         return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
 
     def __find_static_USP(self, ego, seq_ego_placeid, alter, ):
