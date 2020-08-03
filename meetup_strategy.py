@@ -1971,6 +1971,9 @@ class GeneralisedMeetup(Meetup):
 
         if verbose:
             print(ego)
+            name = 'Generalised_print_ego.txt'
+            with open(name, 'a+') as outfile:
+                outfile.write(str(ego) + '\n')
 
         return pd.concat(df_list)
 
