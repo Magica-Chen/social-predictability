@@ -1916,6 +1916,7 @@ class GeneralisedMeetup(Meetup):
     def __find_dynamic_USP_pair(self, ego, seq_ego_time, seq_ego_placeid, alter):
         alter_info = self.placeidT[alter]
         seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
+        shared_placeid = list(set(seq_alter_placeid) & set(seq_ego_placeid))
 
         if self.time_delta == 0:
             seq_alter_time = alter_info.index.floor('H').tolist()
@@ -1928,15 +1929,15 @@ class GeneralisedMeetup(Meetup):
 
         count_result = Counter()
         for t, w in zip(seq_ego_time, seq_ego_placeid):
-            raw_count = seq_alter_placeid.count(w)
-            if raw_count > 0:
+            if w in shared_placeid:
                 # find the corresponding time where has the shared location
                 if self.time_delta == 0:
                     t = t.floor('H')
                 start_time = t + timedelta(seconds=-self.time_delta)
                 end_time = t + timedelta(seconds=self.time_delta)
-                count_result[w] += sum([1 for i, val in enumerate(seq_alter_placeid)
-                                        if (val == w) & (seq_alter_time[i] >= start_time) & (
+                ids = util.fast_indices(seq_alter_placeid, w)
+                count_result[w] += sum([1 for i in ids
+                                        if (seq_alter_time[i] >= start_time) & (
                                                 seq_alter_time[i] <= end_time)])
 
         count_tuple = count_result.most_common()

@@ -253,3 +253,14 @@ def CalcPi(N, S, thresh=.9):
             return fsolve(Fano, .05, (N, S))[0]
         else:
             return fsolve(Fano, .5, (N, S))[0]
+
+
+def fast_indices(lst, element):
+    result = []
+    offset = -1
+    while True:
+        try:
+            offset = lst.index(element, offset+1)
+        except ValueError:
+            return result
+        result.append(offset)
