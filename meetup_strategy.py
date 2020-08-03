@@ -1906,35 +1906,34 @@ class GeneralisedMeetup(Meetup):
         alter_info = self.placeidT[alter]
         seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
 
-        if set(seq_ego_placeid) & set(seq_alter_placeid):
-            if self.time_delta == 0:
-                seq_alter_time = alter_info.index.floor('H').tolist()
-                # remove the duplicates
-                interim = OrderedDict.fromkeys(zip(seq_alter_time, seq_alter_placeid))
-                seq_alter_time = [k[0] for k in interim]
-                seq_alter_placeid = [k[1] for k in interim]
-            else:
-                seq_alter_time = alter_info.index.tolist()
+        if self.time_delta == 0:
+            seq_alter_time = alter_info.index.floor('H').tolist()
+            # remove the duplicates
+            interim = OrderedDict.fromkeys(zip(seq_alter_time, seq_alter_placeid))
+            seq_alter_time = [k[0] for k in interim]
+            seq_alter_placeid = [k[1] for k in interim]
+        else:
+            seq_alter_time = alter_info.index.tolist()
 
-            dynamic_USP_pair = []
-            count_result = Counter()
-            for t, w in zip(seq_ego_time, seq_ego_placeid):
-                raw_count = seq_alter_placeid.count(w)
-                if raw_count > 0:
-                    # find the corresponding time where has the shared location
-                    if self.time_delta == 0:
-                        t = t.floor('H')
-                    start_time = t + timedelta(seconds=-self.time_delta)
-                    end_time = t + timedelta(seconds=self.time_delta)
-                    count_result[w] += sum([1 for i, val in enumerate(seq_alter_placeid)
-                                            if (val == w) & (seq_alter_time[i] >= start_time) & (
-                                                    seq_alter_time[i] <= end_time)])
+        dynamic_USP_pair = []
+        count_result = Counter()
+        for t, w in zip(seq_ego_time, seq_ego_placeid):
+            raw_count = seq_alter_placeid.count(w)
+            if raw_count > 0:
+                # find the corresponding time where has the shared location
+                if self.time_delta == 0:
+                    t = t.floor('H')
+                start_time = t + timedelta(seconds=-self.time_delta)
+                end_time = t + timedelta(seconds=self.time_delta)
+                count_result[w] += sum([1 for i, val in enumerate(seq_alter_placeid)
+                                        if (val == w) & (seq_alter_time[i] >= start_time) & (
+                                                seq_alter_time[i] <= end_time)])
 
-            count_tuple = count_result.most_common()
-            for x in count_tuple:
-                if x[1] > 0:
-                    dynamic_USP_pair.append([ego, alter, x[0], x[1]])
-            return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
+        count_tuple = count_result.most_common()
+        for x in count_tuple:
+            if x[1] > 0:
+                dynamic_USP_pair.append([ego, alter, x[0], x[1]])
+        return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
 
     def __find_static_USP(self, ego, seq_ego_placeid, alter, ):
         alter_info = self.placeidT[alter]
@@ -1952,7 +1951,6 @@ class GeneralisedMeetup(Meetup):
         return pd.DataFrame(static_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
 
     def _find_generalised_meetup(self, ego, verbose=False):
-        userlist = self.userlist
         if self.placeidT is None:
             self.temporal_placeid()
 
@@ -1960,7 +1958,7 @@ class GeneralisedMeetup(Meetup):
         seq_ego_placeid = ego_info['placeid'].astype(str).values.tolist()
         seq_ego_time = ego_info.index.tolist()
 
-        alterlist = userlist[:]
+        alterlist = list(set(self.pdata[self.pdata['placeid'].isin(seq_ego_placeid)]['userid'].tolist()))
         alterlist.remove(ego)
 
         """ If time_delta is not None, we will consider dynamic unique shared placeid, otherwise static"""
