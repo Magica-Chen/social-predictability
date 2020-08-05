@@ -1893,7 +1893,7 @@ class UniqMeetupOneByOne(MeetupOneByOne):
 
 
 class GeneralisedMeetup(Meetup):
-    def __init__(self, path, mins_records=150, freq='H',
+    def __init__(self, path, mins_records=150, freq='H', name='24H-wp',
                  time_delta=36000, placeidT=None,
                  geoid=False, resolution=None, epsilon=2
                  ):
@@ -1912,6 +1912,7 @@ class GeneralisedMeetup(Meetup):
                                                 geoid, resolution, epsilon)
         self.placeidT = placeidT
         self.time_delta = time_delta
+        self.name = name
 
     def __find_dynamic_USP_pair(self, ego, seq_ego_time, seq_ego_placeid, alter):
         alter_info = self.placeidT[alter]
@@ -1945,56 +1946,66 @@ class GeneralisedMeetup(Meetup):
         # for x in count_tuple:
         #     if x[1] > 0:
         #         dynamic_USP_pair.append([ego, alter, x[0], x[1]])
-        return pd.DataFrame(dynamic_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
+        return pd.DataFrame(dynamic_USP_pair, columns=['userid_x', 'userid_y', 'USP', 'n_USP'])
 
-    def __find_static_USP(self, ego, seq_ego_placeid, alter, ):
-        alter_info = self.placeidT[alter]
-        seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
-
-        count_result = Counter()
-        for w in seq_ego_placeid:
-            count_result[w] += seq_alter_placeid.count(w)
-
-        count_tuple = count_result.most_common()
-        static_USP_pair = []
-        for x in count_tuple:
-            if x[1] > 0:
-                static_USP_pair.append([ego, alter, x[0], x[1]])
-        return pd.DataFrame(static_USP_pair, columns=['ego', 'alter', 'USP', 'n_USP'])
+    # def __find_static_USP(self, ego, seq_ego_placeid, alter):
+    #     alter_info = self.placeidT[alter]
+    #     seq_alter_placeid = alter_info['placeid'].astype(str).values.tolist()
+    #
+    #     count_result = Counter()
+    #     for w in seq_ego_placeid:
+    #         count_result[w] += seq_alter_placeid.count(w)
+    #
+    #     count_tuple = count_result.most_common()
+    #     static_USP_pair = []
+    #     for x in count_tuple:
+    #         if x[1] > 0:
+    #             static_USP_pair.append([ego, alter, x[0], x[1]])
+    #     return pd.DataFrame(static_USP_pair, columns=['userid_x', 'userid_y', 'USP', 'n_USP'])
 
     def _find_generalised_meetup(self, ego, verbose=False):
         if self.placeidT is None:
             self.temporal_placeid()
 
-        ego_info = self.placeidT[ego]
-        seq_ego_placeid = ego_info['placeid'].astype(str).values.tolist()
-        seq_ego_time = ego_info.index.tolist()
-
-        alterlist = list(set(self.pdata[self.pdata['placeid'].isin(seq_ego_placeid)]['userid'].tolist()))
-        alterlist.remove(ego)
-
         """ If time_delta is not None, we will consider dynamic unique shared placeid, otherwise static"""
         if self.time_delta:
+            ego_info = self.placeidT[ego]
+            seq_ego_placeid = ego_info['placeid'].astype(str).values.tolist()
+            seq_ego_time = ego_info.index.tolist()
+
+            alterlist = list(set(self.pdata[self.pdata['placeid'].isin(seq_ego_placeid)]['userid'].tolist()))
+            alterlist.remove(ego)
+
             df_list = [self.__find_dynamic_USP_pair(ego, seq_ego_time, seq_ego_placeid, alter)
                        for alter in alterlist]
+            meetup = pd.concat(df_list)
         else:
-            df_list = [self.__find_static_USP(ego, seq_ego_placeid, alter)
-                       for alter in alterlist]
+            # df_list = [self.__find_static_USP(ego, seq_ego_placeid, alter)
+            #            for alter in alterlist]
+            df_ego = self.pdata[self.pdata['userid'] == ego][['userid', 'placeid']]
 
+            df_alters = self.pdata[self.pdata['userid'] != ego][['userid', 'placeid']]
+            df_alters = df_alters[df_alters['placeid'].isin(df_ego['placeid'])]
+
+            meetup = df_ego.merge(df_alters, how='left', on=['placeid']) \
+                .dropna()[['userid_x', 'placeid', 'userid_y']] \
+                .drop_duplicates().groupby(['userid_x', 'userid_y']).size() \
+                .reset_index(name='count').sort_values(by=['count', 'userid_y'],
+                                                       ascending=[False, True])
         if verbose:
             print(ego)
-            name = 'Generalised_print_ego.txt'
+            name = self.name + '_print_ego.txt'
             with open(name, 'a+') as outfile:
                 outfile.write(str(ego) + '\n')
 
-        return pd.concat(df_list)
+        return meetup
 
     def find_all_generalised_meetup(self, verbose=False, filesave=False):
         all_list = [self._find_generalised_meetup(ego, verbose) for ego in self.userlist]
         GMFN = pd.concat(all_list)
         self.user_meetup = GMFN
         if filesave:
-            file_name = 'GeneralisedMFN_' + str(self.time_delta) + '.csv'
+            file_name = self.name + '_MFN_' + str(self.time_delta) + '.csv'
             GMFN.to_csv(file_name, index=False)
 
         return self.user_meetup
