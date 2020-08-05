@@ -5,7 +5,8 @@
 # (c) Zexun Chen, 2020-07-23
 # sxtpy2010@gmail.com
 
-import pandas as pd
+# import pandas as pd
+import modin.pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
