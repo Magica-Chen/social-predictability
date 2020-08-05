@@ -6,7 +6,6 @@
 # sxtpy2010@gmail.com
 
 import pandas as pd
-# import modin.pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt

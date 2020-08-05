@@ -6,7 +6,6 @@
 # sxtpy2010@gmail.com
 
 import pandas as pd
-# import modin.pandas as pd
 
 
 def geo2id(df, resolution=None, lat='lat', lon='lon'):
