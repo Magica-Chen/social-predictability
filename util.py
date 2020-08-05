@@ -5,8 +5,8 @@
 # (c) Zexun Chen, Sean Kelty 2020-05-26
 # sxtpy2010@gmail.com
 
-# import pandas as pd
-import modin.pandas as pd
+import pandas as pd
+# import modin.pandas as pd
 import mpmath
 import numpy as np
 import collections
