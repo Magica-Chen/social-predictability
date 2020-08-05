@@ -1990,8 +1990,8 @@ class GeneralisedMeetup(Meetup):
             meetup = df_ego.merge(df_alters, how='left', on=['placeid']) \
                 .dropna()[['userid_x', 'placeid', 'userid_y']] \
                 .drop_duplicates().groupby(['userid_x', 'userid_y']).size() \
-                .reset_index(name='count').sort_values(by=['count', 'userid_y'],
-                                                       ascending=[False, True])
+                .reset_index(name='meetup').sort_values(by=['meetup', 'userid_y'],
+                                                        ascending=[False, True])
         if verbose:
             print(ego)
             name = self.name + '_print_ego.txt'
