@@ -299,8 +299,8 @@ class Meetup(object):
         shannon_entropy = util.shannon_entropy(seq)
         LZ_entropy = util.LZ_entropy(seq, e=self.epsilon)
         N_unique = len(set(seq))
-        shannon_Pi = util.getPredictability(N=N_unique, S=shannon_entropy)
-        LZ_Pi = util.getPredictability(N=N_unique, S=LZ_entropy)
+        shannon_Pi = util.getPredictability(N=N_unique, S=shannon_entropy, e=self.epsilon)
+        LZ_Pi = util.getPredictability(N=N_unique, S=LZ_entropy, e=self.epsilon)
         if verbose:
             print(user)
 
