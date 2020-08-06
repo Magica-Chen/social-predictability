@@ -293,6 +293,32 @@ class Meetup(object):
         else:
             return len(alter_time)
 
+    def basic_info(self, user, verbose=False):
+        """ To compute Shannon entropy, Shannon predictability limit, LZ entropy, and LZ predictability limit"""
+        seq = self.placeidT[user]['placeid'].astype(str).values.tolist()
+        shannon_entropy = util.shannon_entropy(seq)
+        LZ_entropy = util.LZ_entropy(seq, e=self.epsilon)
+        N_unique = len(set(seq))
+        shannon_Pi = util.getPredictability(N=N_unique, S=shannon_entropy)
+        LZ_Pi = util.getPredictability(N=N_unique, S=LZ_entropy)
+        if verbose:
+            print(user)
+
+        return [shannon_entropy, shannon_Pi, LZ_entropy, LZ_Pi]
+
+    def basic_all_info(self, verbose=False, filesave=False, name='wp'):
+        basic_list = [self.basic_info(user, verbose) for user in self.userlist]
+        df_basic = pd.DataFrame(basic_list, columns=['Shannon Entropy',
+                                                     'Shannon Pi',
+                                                     'LZ Entropy',
+                                                     'LZ Pi']
+                                )
+        if filesave:
+            name = name + '-dataset-basic.csv'
+            df_basic.to_csv(name, index=False)
+
+        return df_basic
+
 
 class MeetupOneByOne(Meetup):
     """
@@ -338,7 +364,7 @@ class MeetupOneByOne(Meetup):
             self.placeidT = placeidT
 
         self.epsilon = epsilon
-        self.name=name
+        self.name = name
         self.user_stats = None
         self.ego_stats = None
         self.tr_user_stats = None
