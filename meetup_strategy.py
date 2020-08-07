@@ -2006,6 +2006,8 @@ class GeneralisedMeetup(Meetup):
                        for alter in alterlist]
             if len(df_list):
                 meetup = pd.concat(df_list)
+            else:
+                meetup = None
 
         else:
             # df_list = [self.__find_static_USP(ego, seq_ego_placeid, alter)
