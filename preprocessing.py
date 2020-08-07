@@ -40,6 +40,7 @@ def pre_processing(df_raw, min_records=150, freq='H',
     df_wp = df_raw.dropna(subset=['userid', 'placeid', 'datetime'])[[
         'userid', 'placeid', 'datetime', 'lat', 'lon']]
     # for weeplace dataset, '-' also means missing placeid
+    df_wp['placeid'] = df_wp['placeid'].astype(str)
     df_wp = df_wp[df_wp['placeid'] != '-']
 
     df = df_wp.groupby('userid')['datetime'].count().reset_index(name='count')
