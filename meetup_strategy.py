@@ -2004,7 +2004,9 @@ class GeneralisedMeetup(Meetup):
 
             df_list = [self.__find_dynamic_USP_pair(ego, seq_ego_time, seq_ego_placeid, alter)
                        for alter in alterlist]
-            meetup = pd.concat(df_list)
+            if len(df_list):
+                meetup = pd.concat(df_list)
+
         else:
             # df_list = [self.__find_static_USP(ego, seq_ego_placeid, alter)
             #            for alter in alterlist]
