@@ -304,11 +304,12 @@ class Meetup(object):
         if verbose:
             print(user)
 
-        return [shannon_entropy, shannon_Pi, LZ_entropy, LZ_Pi]
+        return [user, shannon_entropy, shannon_Pi, LZ_entropy, LZ_Pi]
 
     def basic_all_info(self, verbose=False, filesave=False, name='wp'):
         basic_list = [self.basic_info(user, verbose) for user in self.userlist]
-        df_basic = pd.DataFrame(basic_list, columns=['Shannon Entropy',
+        df_basic = pd.DataFrame(basic_list, columns=['userid',
+                                                     'Shannon Entropy',
                                                      'Shannon Pi',
                                                      'LZ Entropy',
                                                      'LZ Pi']
