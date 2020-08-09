@@ -2102,8 +2102,8 @@ class FastOneByOne(Meetup):
         ego_time = self.placeidT[ego].index.tolist()
         ego_placeid = self.placeidT[ego]['placeid'].astype(str).values.tolist()
         N_uniq_ego = len(set(ego_placeid))
-
-        alters = self.network[self.network['userid_x'] == ego]['userid_y'].tolist()
+        # only focus on unique alters
+        alters = list(set(self.network[self.network['userid_x'] == ego]['userid_y'].tolist()))
 
         ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
         df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group',
