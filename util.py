@@ -203,25 +203,48 @@ def uniq_LZ_cross_entropy(W1, W2, PTs, lambdas=False, e=100):
             return (1.0 * wb / sum(L)) * np.log2(n_previous)
 
 
-def network_similarity(network):
-    egolist = network['userid'].unique().tolist()
-    rate_list = [similarity(ego, network) for ego in egolist]
-    df_similarity = pd.DataFrame(rate_list, columns=['userid', 'similarity_rate'])
-    return df_similarity
+def fast_indices(lst, element):
+    # fast approach to find all indices of the given element
+    result = []
+    offset = -1
+    while True:
+        try:
+            offset = lst.index(element, offset + 1)
+        except ValueError:
+            return result
+        result.append(offset)
 
 
-def similarity(ego, share_network):
-    A = len(share_network[share_network['userid'] == ego]['userid_y'])
-    B = share_network[share_network['userid'] == ego]['userid_y'].nunique()
-    return [ego, (A - B) / A * 2]
+def jaccard_similarity(list1, list2):
+    s1 = set(list1)
+    s2 = set(list2)
+    return len(s1.intersection(s2)) / len(s1.union(s2))
 
 
-def co_location_rate(ego, alter, placeid_set):
-    ego_set = placeid_set[ego]
-    alter_set = placeid_set[alter]
-    common_elements = ego_set & alter_set
-    return len(common_elements) / len(ego_set)
+def jaccard_pandas_similarity(df):
+    # calculate jaccard similarity for the pandas dataframe
+    category = df.columns
+    n = len(category)
+    metric = [[1] * n for i in range(n)]
 
+    for i in range(n):
+        for j in range(n):
+            if i is not j:
+                metric[i][j] = jaccard_similarity(df[category[i]], df[category[j]])
+    return metric
+
+
+def shared_location_rate(ego, alter, placeidT):
+    ego_seq = placeidT[ego]['placeid'].astype(str).values.tolist()
+    ego_Counter = collections.Counter(ego_seq)
+    alter_Counter = collections.Counter(placeidT[alter]['placeid'].astype(str).values.tolist())
+    common_elements = ego_Counter & alter_Counter
+    # return two variable, first one is unique shared location rate, and the second one is
+    # shared location rate
+    return len(common_elements) / len(ego_Counter), sum(common_elements.values()) / len(ego_seq)
+
+
+#####################################
 
 def shared_ULI(ego_time, ego_placeid, alter_time, alter_placeid):
     shared_ULI = list(set(alter_placeid) & set(ego_placeid))
@@ -255,32 +278,21 @@ def CalcPi(N, S, thresh=.9):
             return fsolve(Fano, .5, (N, S))[0]
 
 
-def fast_indices(lst, element):
-    # fast approach to find all indices of the given element
-    result = []
-    offset = -1
-    while True:
-        try:
-            offset = lst.index(element, offset + 1)
-        except ValueError:
-            return result
-        result.append(offset)
+def network_similarity(network):
+    egolist = network['userid'].unique().tolist()
+    rate_list = [similarity(ego, network) for ego in egolist]
+    df_similarity = pd.DataFrame(rate_list, columns=['userid', 'similarity_rate'])
+    return df_similarity
 
 
-def jaccard_similarity(list1, list2):
-    s1 = set(list1)
-    s2 = set(list2)
-    return len(s1.intersection(s2)) / len(s1.union(s2))
+def similarity(ego, share_network):
+    A = len(share_network[share_network['userid'] == ego]['userid_y'])
+    B = share_network[share_network['userid'] == ego]['userid_y'].nunique()
+    return [ego, (A - B) / A * 2]
 
 
-def jaccard_pandas_similarity(df):
-    # calculate jaccard similarity for the pandas dataframe
-    category = df.columns
-    n = len(category)
-    metric = [[1] * n for i in range(n)]
-
-    for i in range(n):
-        for j in range(n):
-            if i is not j:
-                metric[i][j] = jaccard_similarity(df[category[i]], df[category[j]])
-    return metric
+def co_location_rate(ego, alter, placeid_set):
+    ego_set = placeid_set[ego]
+    alter_set = placeid_set[alter]
+    common_elements = ego_set & alter_set
+    return len(common_elements) / len(ego_set)
