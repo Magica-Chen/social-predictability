@@ -256,11 +256,31 @@ def CalcPi(N, S, thresh=.9):
 
 
 def fast_indices(lst, element):
+    # fast approach to find all indices of the given element
     result = []
     offset = -1
     while True:
         try:
-            offset = lst.index(element, offset+1)
+            offset = lst.index(element, offset + 1)
         except ValueError:
             return result
         result.append(offset)
+
+
+def jaccard_similarity(list1, list2):
+    s1 = set(list1)
+    s2 = set(list2)
+    return len(s1.intersection(s2)) / len(s1.union(s2))
+
+
+def jaccard_pandas_similarity(df):
+    # calculate jaccard similarity for the pandas dataframe
+    category = df.columns
+    n = len(category)
+    metric = [[1] * n for i in range(n)]
+
+    for i in range(n):
+        for j in range(n):
+            if i is not j:
+                metric[i][j] = jaccard_similarity(df[category[i]], df[category[j]])
+    return metric
