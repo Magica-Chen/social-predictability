@@ -2078,7 +2078,7 @@ class FastOneByOne(Meetup):
 
         self.user_stats = None
 
-    def __CE_ego_alter(self, ego_time, ego_placeid, alter):
+    def _CE_ego_alter(self, ego_time, ego_placeid, alter):
         N_uniq_ego = len(set(ego_placeid))
 
         alter_time = self.placeidT[alter].index.tolist()
@@ -2105,7 +2105,7 @@ class FastOneByOne(Meetup):
         # only focus on unique alters
         alters = list(set(self.network[self.network['userid_x'] == ego]['userid_y'].tolist()))
 
-        ego_result_list = [self.__CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
+        ego_result_list = [self._CE_ego_alter(ego_time, ego_placeid, alter) for alter in alters]
         df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group',
                                                         'CE_alter', 'Pi_alter',
                                                         'N_previous'])
@@ -2168,7 +2168,7 @@ class FastOneByOneTopK(FastOneByOne):
         counter = 0
         while len(ego_result_list) <= self.K:
             alter = alters[counter]
-            temp_list = self.__CE_ego_alter(ego_time, ego_placeid, alter)
+            temp_list = self._CE_ego_alter(ego_time, ego_placeid, alter)
             # temp_list[1] is group, only consider 'useful' group
             if temp_list[1] == 'useful':
                 ego_result_list.append(temp_list)
