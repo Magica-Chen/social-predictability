@@ -2131,3 +2131,59 @@ class FastOneByOne(Meetup):
             self.user_stats.to_csv(name, index=False)
 
         return self.user_stats
+
+
+class FastOneByOneTopK(FastOneByOne):
+    """
+    Create a fast way to compute one by one cross entropy and cros predictability (only top K alters)
+    For fast computation
+    """
+
+    def __init__(self, path, network, mins_records=150, freq='H',
+                 geoid=False, resolution=None, epsilon=2,
+                 placeidT=None, K=10,
+                 name='wp'):
+        """ MeetupOneByOne needs to have several important inputs
+        Arg:
+            path, mins_records, geoid, resolution are from the mother class Meetup
+            n_meetupers: int, the number of meetupers we set
+            network: DataFrame, cols = ['userid_x', 'userid_y']
+            placeidT: dict, include all the users' temporal placeid, keys are the userids
+
+        Notes: since user_meetup and placeid need some time to compute, so if possible, you'd better to save them in
+        in advance and when you initialise MeetupOneByOne, you can import them as inputs, it will reduce time.
+        """
+        super(FastOneByOneTopK, self).__init__(path, network, mins_records, freq,
+                                               geoid, resolution, epsilon, placeidT, name)
+        self.K = K
+
+    def _CE_ego(self, ego, verbose=False):
+        ego_time = self.placeidT[ego].index.tolist()
+        ego_placeid = self.placeidT[ego]['placeid'].astype(str).values.tolist()
+        N_uniq_ego = len(set(ego_placeid))
+        # only focus on unique alters
+        alters = list(set(self.network[self.network['userid_x'] == ego]['userid_y'].tolist()))
+
+        ego_result_list = []
+        counter = 0
+        while len(ego_result_list) <= self.K:
+            alter = alters[counter]
+            temp_list = self.__CE_ego_alter(ego_time, ego_placeid, alter)
+            # temp_list[1] is group, only consider 'useful' group
+            if temp_list[1] == 'useful':
+                ego_result_list.append(temp_list)
+            counter += 1
+        df_ego = pd.DataFrame(ego_result_list, columns=['userid_y', 'group',
+                                                        'CE_alter', 'Pi_alter',
+                                                        'N_previous'])
+        df_ego.insert(0, 'userid_x', ego)
+        LZ = util.LZ_entropy(ego_placeid, e=self.epsilon)
+        df_ego['LZ'] = LZ
+        df_ego['Pi'] = util.getPredictability(N=N_uniq_ego, S=LZ, e=self.epsilon)
+
+        if verbose:
+            print(ego)
+            name = self.name + '_print_ego.txt'
+            with open(name, 'a+') as outfile:
+                outfile.write(str(ego) + '\n')
+        return df_ego
