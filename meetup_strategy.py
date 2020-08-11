@@ -2166,7 +2166,7 @@ class FastOneByOneTopK(FastOneByOne):
 
         ego_result_list = []
         counter = 0
-        while len(ego_result_list) <= self.K:
+        while (len(ego_result_list) <= self.K) & (counter < len(alters)):
             alter = alters[counter]
             temp_list = self._CE_ego_alter(ego_time, ego_placeid, alter)
             # temp_list[1] is group, only consider 'useful' group
