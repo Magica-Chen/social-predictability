@@ -831,10 +831,7 @@ class MeetupWhole(Meetup):
             self.total_meetup = total_meetup
 
         if user_meetup is None:
-            if n_previous is None:
-                self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=None)
-            else:
-                self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=n_previous)
+            self.user_meetup = self.meetup_filter(n_meetupers=None, n_previous=n_previous)
 
         else:
             self.user_meetup = user_meetup
