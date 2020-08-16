@@ -1253,8 +1253,11 @@ class MeetupCrossValid(MeetupWhole):
                 length_ego_uni, length_ego):
         """ alters only"""
         if alters[0] is not str:
-            alters = [str(alter) for alter in alters]
-        alters_names = ','.join(map(lambda x: "'" + x + "'", alters))
+            alters_interim = [str(alter) for alter in alters]
+        else:
+            alters_interim = alters
+        alters_names = ','.join(map(lambda x: "'" + x + "'", alters_interim))
+
         alters_L, wb_length, alters_length = map(list, zip(*[self._ego_alter_basic(ego_time,
                                                                                    ego_placeid,
                                                                                    ego_L,
