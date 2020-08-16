@@ -1219,7 +1219,7 @@ class MeetupCrossValid(MeetupWhole):
         ego_time, length_ego_uni, length_ego, ego_placeid = self._extract_info(ego)
 
         ego_L = util.LZ_entropy(ego_placeid, e=self.epsilon, lambdas=True)
-        total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].tolist()
+        total_alters = self.user_meetup[self.user_meetup['userid_x'] == ego]['userid_y'].astype(str).values.tolist()
         n_meetupers = len(total_alters)
 
         """ego only"""
