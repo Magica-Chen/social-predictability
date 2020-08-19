@@ -18,9 +18,14 @@ catscale10_2 <- scale_fill_manual(values = colors_10)
 
 
 ### """DataSet Check"""
-wp_CE <- read.csv("temp_data/wp-150/wp-150-H/wp_CE.csv")
-bk_CE <- read.csv("temp_data/bk-150/bk-150-H/bk_CE.csv")
-gw_CE <- read.csv("temp_data/gws-150/gws-150-H/gws_CE.csv")
+wp_CE <- read.csv("temp_data/wp-150/wp-150-H/wp_CE_over1.csv")
+bk_CE <- read.csv("temp_data/bk-150/bk-150-H/bk_CE_over1.csv")
+gw_CE <- read.csv("temp_data/gws-150/gws-150-H/gws_CE_over1.csv")
+
+
+wp_CE <- wp_CE[!is.na(wp_CE$CE_alter), ]
+bk_CE <- bk_CE[!is.na(bk_CE$CE_alter), ]
+gw_CE <- gw_CE[!is.na(gw_CE$CE_alter), ]
 
 
 wp_CE$dataset <- "Weeplace"
@@ -28,7 +33,7 @@ bk_CE$dataset <- "BrightKite"
 gw_CE$dataset <- "Gowalla"
 
 df_CE <- rbindlist(list(wp_CE, bk_CE, gw_CE))
-df_CE <- df_CE[!is.na(df_CE$CE_alter), ]
+# df_CE <- df_CE[!is.na(df_CE$CE_alter), ]
 
 ### Histgram for these dataset
 
@@ -60,7 +65,7 @@ ggplot(df_CE, aes(x = CE_alter)) +
   ) +
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
   facet_wrap(~dataset, scales = "free") +
-  labs(x = "Entropy (bit)")
+  labs(x = "LZ cross-entropy (bit)")
 
 ggsave(
   filename = "hist_CE.pdf", device = "pdf",
@@ -102,6 +107,7 @@ ggsave(
 )
 
 ### Focus on relative cross-predictability
+df_CE_useful <- df_CE[df_CE$group == "useful", ]
 df_CE_useful$Pi_alter_rate <- (df_CE_useful$Pi_alter) / (df_CE_useful$Pi)
 df_CE_useful <- df_CE_useful[df_CE_useful$Pi_alter_rate < 5, ]
 
@@ -126,7 +132,7 @@ ggplot(df_CE_useful, aes(x = Pi_alter_rate)) +
     values = colors_10[6]
   ) +
   facet_wrap(~dataset, scales = "free") +
-  labs(x = "Relative Cross-predictability")
+  labs(x = "Relative cross-predictability")
 
 ggsave(
   filename = "hist_relative_cross_predictability.pdf", device = "pdf",
