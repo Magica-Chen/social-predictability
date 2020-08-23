@@ -467,16 +467,17 @@ def hist_pred_gender(user_stats, user_stats_mixed=None, l=12, w=6, n_bins=100, m
     ax.legend()
     plt.show()
 
-    
-def cv_plot(data, plot_type='errorbar', threshold=15, mode='talk', l=12, w=7):
+
+def cv_plot(data, plot_type='errorbar', threshold=15, mode='talk',
+            l=12, w=7, ci=95):
     sns.set_context(mode)
     sns.set_style("whitegrid")
     egolist = data['userid'].unique().tolist()
     if threshold is None:
         threshold = len(set(data['Included'].tolist()))
-        
+
     if plot_type is 'two':
-        fig, [ax1, ax2] = plt.subplots(1,2, figsize=(l, w))
+        fig, [ax1, ax2] = plt.subplots(1, 2, figsize=(l, w))
         sns.boxplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                     color='red', ax=ax1)
         type_name = 'Boxplot'
@@ -485,19 +486,19 @@ def cv_plot(data, plot_type='errorbar', threshold=15, mode='talk', l=12, w=7):
         ax1.set_xlabel('Included Number of Alters')
 
         sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
-                    color='blue', ci=95, join=False, ax=ax2)
+                      color='blue', ci=ci, join=False, ax=ax2)
         type_name = 'Mean with 95% CI'
         ax2.set_title(type_name)
         ax2.set_ylabel('')
         ax2.set_xlabel('Included Number of Alters')
-        
-        if len(egolist)==1:
+
+        if len(egolist) == 1:
             Pi_ego = data['Pi_ego'].tolist()[0]
-            name =  egolist[0] + ', $\Pi_{max}=$' + str(Pi_ego)
+            name = egolist[0] + ', $\Pi_{max}=$' + str(Pi_ego)
         else:
             name = 'Statistics for all ' + str(len(egolist)) + " users"
         fig.suptitle(name)
-        
+
     else:
         fig, ax = plt.subplots(figsize=(l, w))
         if plot_type is 'box':
@@ -508,19 +509,20 @@ def cv_plot(data, plot_type='errorbar', threshold=15, mode='talk', l=12, w=7):
             sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
                           color='blue', ci=95, join=False, ax=ax)
             type_name = 'Mean with 95% CI'
-            
+
         if len(egolist) > 1:
             type_name = 'Mean with 95% CI for all ' + str(len(egolist)) + " users"
         else:
             Pi_ego = data['Pi_ego'].tolist()[0]
-            type_name =  egolist[0] + ', $\Pi_{max}=$' + str(Pi_ego)
+            type_name = egolist[0] + ', $\Pi_{max}=$' + str(Pi_ego)
         ax.set_title(type_name)
         ax.set_ylabel('$\Pi_{alters}/ \Pi_{ego}$')
         ax.set_xlabel('Included Number of Alters')
     plt.show()
 
 
-def cv_compare_plot(data, threshold=15, mode='talk', l=12, w=7):
+def cv_compare_plot(data, threshold=15, mode='talk',
+                    l=12, w=7, ci=95):
     sns.set_context(mode)
     sns.set_style("whitegrid")
     egolist = data['userid'].unique().tolist()
@@ -529,7 +531,7 @@ def cv_compare_plot(data, threshold=15, mode='talk', l=12, w=7):
         threshold = len(set(data['Included'].tolist()))
 
     sns.pointplot(x="Included", y="Pi_alters_ratio", data=data[data['Included'] <= threshold],
-                  hue='category', ci=95, join=False, ax=ax)
+                  hue='category', ci=ci, join=False, ax=ax)
 
     if len(egolist) > 1:
         type_name = 'Comparison between true friendship and meetup friendship for all ' + str(len(egolist)) + " users"
@@ -540,4 +542,3 @@ def cv_compare_plot(data, threshold=15, mode='talk', l=12, w=7):
     ax.set_ylabel('$\Pi_{alters}/ \Pi_{ego}$')
     ax.set_xlabel('Included Number of Alters')
     plt.show()
-
