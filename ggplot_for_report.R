@@ -52,8 +52,7 @@ ggsave(
   path = "fig/"
 )
 
-#----------------------------------------------------------
-# plot only for all categories
+#-----plot only for all categories-------
 all_final <- read.csv('final/150_all_category.csv')
 all_final$included <- as.factor(all_final$included)
 
@@ -88,12 +87,11 @@ ggplot(all_final, aes(x=included, y=mean,
 
 ggsave(
   filename = "ALL_relative_Pi.pdf", device = "pdf",
-  width = 9.90, height = 3.00,
+  width = 9.90, height = 2.66,
   path = "fig/"
 )
 
-#----------------------------
-# plot user Jaccard similarity
+#------plot user Jaccard similarity-----------------
 wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user.csv')
 wp_vip_sim$dataset <- 'Weeplace'
 
@@ -143,9 +141,7 @@ ggsave(
 )
 
 
-#----------------------------
-# plot user USLR and SLR
-
+#----plot user USLR and SLR--------
 vip_LR <- read.csv('final/150_all_LR.csv')
 vip_LR$included <- as.factor(vip_LR$included)
 
@@ -179,15 +175,12 @@ ggplot(vip_LR, aes(x=included, y=mean,
 
 ggsave(
   filename = "VIP_LR.pdf", device = "pdf",
-  width = 9.02, height = 5.18,
+  width = 9.02, height = 4.15,
   path = "fig/"
 )
 
 
-
-
-#-----------------------------
-# plot for CV
+#-------plot for CV----------------------
 
 vip_CV <- read.csv('final/150_all_CV.csv')
 vip_CV$included <- as.factor(vip_CV$included)
@@ -218,7 +211,9 @@ ggplot(vip_CV, aes(x=included, y=mean,
                 position=position_dodge(0.05)) + 
   facet_wrap(~dataset, 
              scales = "free_y") + 
-  labs(x ='Rank', y='')
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+       )
 
 ggsave(
   filename = "VIP_CV.pdf", device = "pdf",
