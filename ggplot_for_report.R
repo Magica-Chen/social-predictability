@@ -18,9 +18,8 @@ colors_10 <- c(
 catscale10 <- scale_colour_manual(values = colors_10)
 catscale10_2 <- scale_fill_manual(values = colors_10)
 
-#-----------------------------------------------
-# plot only for H-MFN
-final <- read.csv('final/150_all_H_MFN.csv')
+#---- plot only for H-MFN--------
+final <- read.csv('final/150_all_2_10_CP_H_MFN.csv')
 final$included <- as.factor(final$included)
 
 ggplot(final, aes(x=included, y=mean, color=I("black"))) + 
@@ -47,13 +46,13 @@ ggplot(final, aes(x=included, y=mean, color=I("black"))) +
       )
 
 ggsave(
-  filename = "H_MFN_relative_Pi.pdf", device = "pdf",
+  filename = "H_MFN_relative_Pi_CP.pdf", device = "pdf",
   width = 9.90, height = 2.66,
   path = "fig/"
 )
 
 #-----plot only for all categories-------
-all_final <- read.csv('final/150_all_category.csv')
+all_final <- read.csv('final/150_all_category_CP.csv')
 all_final$included <- as.factor(all_final$included)
 
 ggplot(all_final, aes(x=included, y=mean, 
@@ -86,19 +85,19 @@ ggplot(all_final, aes(x=included, y=mean,
   )
 
 ggsave(
-  filename = "ALL_relative_Pi.pdf", device = "pdf",
+  filename = "ALL_relative_Pi_CP.pdf", device = "pdf",
   width = 9.90, height = 2.66,
   path = "fig/"
 )
 
 #------plot user Jaccard similarity-----------------
-wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user.csv')
+wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user_CP.csv')
 wp_vip_sim$dataset <- 'Weeplace'
 
-bk_vip_sim <- read.csv('final/bk-150/bk_VIP_similarity_user.csv')
+bk_vip_sim <- read.csv('final/bk-150/bk_VIP_similarity_user_CP.csv')
 bk_vip_sim$dataset <- 'BrightKite'
   
-gw_vip_sim <- read.csv('final/gws-150/gws_VIP_similarity_user.csv')
+gw_vip_sim <- read.csv('final/gws-150/gws_VIP_similarity_user_CP.csv')
 gw_vip_sim$dataset <- 'Gowalla'
 
 df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
@@ -135,14 +134,14 @@ ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
   labs(x='', y='Jaccard Similarity')
 
 ggsave(
-  filename = "VIP_similarity_user.pdf", device = "pdf",
+  filename = "VIP_similarity_user_CP.pdf", device = "pdf",
   width = 10.5, height = 8.7,
   path = "fig/"
 )
 
 
 #----plot user USLR and SLR--------
-vip_LR <- read.csv('final/150_all_LR.csv')
+vip_LR <- read.csv('final/150_all_LR_CP.csv')
 vip_LR$included <- as.factor(vip_LR$included)
 
 ggplot(vip_LR, aes(x=included, y=mean, 
@@ -174,7 +173,7 @@ ggplot(vip_LR, aes(x=included, y=mean,
   labs(x ='Rank', y='')
 
 ggsave(
-  filename = "VIP_LR.pdf", device = "pdf",
+  filename = "VIP_LR_CP.pdf", device = "pdf",
   width = 9.02, height = 4.15,
   path = "fig/"
 )
