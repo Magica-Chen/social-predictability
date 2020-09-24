@@ -33,7 +33,9 @@ bk_CE$dataset <- "BrightKite"
 gw_CE$dataset <- "Gowalla"
 
 df_CE <- rbindlist(list(wp_CE, bk_CE, gw_CE))
-# df_CE <- df_CE[!is.na(df_CE$CE_alter), ]
+# add a N_previous requirement M_previous >=150
+df_CE <- within(df_CE, group[N_previous<150] <- 'useless')
+
 
 ### Histgram for these dataset
 
@@ -68,7 +70,7 @@ ggplot(df_CE, aes(x = CE_alter)) +
   labs(x = "LZ cross-entropy (bit)")
 
 ggsave(
-  filename = "hist_CE.pdf", device = "pdf",
+  filename = "hist_CE_Np.pdf", device = "pdf",
   width = 9.90, height = 2.66,
   path = "fig/"
 )
@@ -76,6 +78,9 @@ ggsave(
 
 ### Only focus on usefull group's cross-predictability
 df_CE_useful <- df_CE[df_CE$group == "useful", ]
+D = df_CE_useful %>%
+  group_by(dataset) %>%
+  mutate(n_ego = n_distinct(userid_x), n_alters = n_distinct(userid_y))
 
 ggplot(df_CE_useful, aes(x = Pi_alter)) +
   geom_histogram(aes(fill = group),
@@ -101,7 +106,7 @@ ggplot(df_CE_useful, aes(x = Pi_alter)) +
   labs(x = "Cross-predictability")
 
 ggsave(
-  filename = "hist_cross_predictability.pdf", device = "pdf",
+  filename = "hist_cross_predictability_Np.pdf", device = "pdf",
   width = 9.90, height = 2.66,
   path = "fig/"
 )
@@ -135,7 +140,7 @@ ggplot(df_CE_useful, aes(x = Pi_alter_rate)) +
   labs(x = "Relative cross-predictability")
 
 ggsave(
-  filename = "hist_relative_cross_predictability.pdf", device = "pdf",
+  filename = "hist_relative_cross_predictability_Np.pdf", device = "pdf",
   width = 9.90, height = 2.66,
   path = "fig/"
 )
