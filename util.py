@@ -244,6 +244,22 @@ def shared_location_rate(ego, alter, placeidT):
     return len(common_elements) / len(ego_Counter), sum(common_elements.values()) / len(ego_seq)
 
 
+def colocationRate(ego, alters, placeidT):
+    ego_seq = placeidT[ego]['placeid'].astype(str).values.tolist()
+    ego_Counter = collections.Counter(ego_seq)
+    
+    if type(alters)==list:
+        common_elements = collections.Counter()
+        for alter in alters:
+            alter_Counter = collections.Counter(placeidT[alter]['placeid'].astype(str).values.tolist())
+            temp_common_elements = ego_Counter & alter_Counter
+            common_elements += temp_common_elements
+    else:
+        alter_Counter = collections.Counter(placeidT[alters]['placeid'].astype(str).values.tolist())
+        common_elements = ego_Counter & alter_Counter
+    
+    return [len(common_elements) / len(ego_Counter), sum(common_elements.values()) / len(ego_seq)]
+
 #####################################
 
 def shared_ULI(ego_time, ego_placeid, alter_time, alter_placeid):
