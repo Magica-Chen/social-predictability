@@ -5,6 +5,7 @@ library("ggplot2")
 library("reshape2")
 library("latex2exp")
 library("boot")
+library("scales")
 
 theme_set(
   theme_bw() +
@@ -91,6 +92,7 @@ ggplot(all_final, aes(x=included, y=mean,
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
   facet_wrap(~dataset, scales = "free") + 
@@ -107,6 +109,50 @@ ggsave(
   width = 9.90, height = 2.66,
   path = "fig/"
 )
+
+## CCE plot for all categories
+ggplot(all_final, aes(x=included, y=mean_CCE, 
+                      # shape=category,
+                      color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower_CCE, ymax=upper_CCE), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, scales = "free") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$S_{alters}/ \\S_{ego}")))
+  )
+
+ggsave(
+  # filename = "ALL_relative_CCE_CP.pdf", 
+  # filename = "ALL_relative_CCE_MeetupNp.pdf", 
+  # filename = "ALL_relative_CCE_FreqNp.pdf", 
+  # filename = "ALL_relative_CCE_MeetupNp_part.pdf",
+  filename = "ALL_relative_CCE_MeetupNp_part.pdf",
+  device = "pdf",
+  width = 9.90, height = 2.66,
+  path = "fig/"
+)
+
+
 
 #------plot user Jaccard similarity-----------------
 # wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user_CP.csv')
@@ -262,6 +308,54 @@ ggsave(
   filename = "VIP_LR_FreqNp.pdf", 
   device = "pdf",
   width = 9.02, height = 4.15,
+  path = "fig/"
+)
+
+#----plot user cumulative SDLR-------
+vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
+                    stringsAsFactors = FALSE)
+vip_CLR <- vip_CLR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
+vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"Co-locatorship"
+vip_CLR$category[vip_CLR$category=="TFN"]<-"Friendship"
+
+vip_CLR$included <- as.factor(vip_CLR$included)
+vip_CLR$category<- as.factor(vip_CLR$category)
+
+ggplot(vip_CLR, aes(x=included, y=mean, 
+                   # shape=category,
+                   color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\eta_{ego}(alters)")))
+  )
+
+ggsave(
+  filename = "VIP_cumulative_LR_MeetupNp.pdf", 
+  device = "pdf",
+  width = 9.90, height = 2.66,
   path = "fig/"
 )
 
