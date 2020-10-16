@@ -18,7 +18,7 @@ catscale10_2 <- scale_fill_manual(values = colors_10)
 df_all <- read.csv("final/MeetupNp_Rank/150_all_MeetupNp_CODLR_CCP.csv")
 # H_MFN <-  subset(df_all, subset= (Included==10 & category=='CB-1H-MFN' & dataset=='Weeplace'))
 # focus on both datasets
-H_MFN <-  subset(df_all, subset= (category=='CB-1H-MFN'))
+H_MFN <-  subset(df_all, subset= (category=='TFN'))
 H_MFN$Included <- as.factor(H_MFN$Included)
 
 ggscatter(H_MFN, x = "USLR", y = "Pi_alters_ratio", color='dataset',
@@ -34,17 +34,17 @@ ggscatter(H_MFN, x = "USLR", y = "Pi_alters_ratio", color='dataset',
   )+
   scale_x_continuous(labels = scales::percent)+
   facet_wrap(~dataset + Included,
-             nrow = 3,
-             ncol = 10,
+             nrow = 6,
+             ncol = 5,
              scales = 'free_y',
              # strip.position="right"
              )
 
 ggsave(
-  filename = "VIP_MeetupNp_CODLR_CCP_Full_H_MFN.pdf",
-  # filename = "VIP_MeetupNp_CODLR_CCP_Full_TFN.pdf",
+  # filename = "VIP_MeetupNp_CODLR_CCP_Full_H_MFN.pdf",
+  filename = "VIP_MeetupNp_CODLR_CCP_Full_TFN.pdf",
   device = "pdf",
-  width = 19, height = 6.5,
+  width = 12, height = 15,
   path = "fig/"
 )
 
