@@ -10,7 +10,7 @@ library("magrittr")
 
 theme_set(
   theme_bw() +
-    theme(legend.position = "right")
+    theme(legend.position = "top")
 )
 
 colors_10 <- c(
@@ -61,20 +61,22 @@ ggsave(
 
 #-----plot only for all categories-------
 # all_final <- read.csv('final/150_all_category_CP.csv')
-all_final <- read.csv('final/MeetupNp_Rank/150_all_category_MeetupNp.csv', stringsAsFactors = FALSE)
+all_final <- read.csv('final/MeetupNp_Rank/150_all_category_MeetupNp.csv', 
+                      stringsAsFactors = FALSE)
 # all_final <- read.csv('final/FreqNp_Rank/150_all_category_FreqNp.csv')
 
-# # only for part -----------------------------------
+# # # only for part -----------------------------------
 # all_final <- all_final %>% filter(category %in% c("CB-1H-MFN", 'TFN'))
-# all_final$category[all_final$category=="CB-1H-MFN"]<-"Co-locatorship"
-# all_final$category[all_final$category=="TFN"]<-"Friendship"
+# all_final$category[all_final$category=="CB-1H-MFN"]<-"Co-locationship"
+# all_final$category[all_final$category=="TFN"]<-"Social relationship"
 # only for all --------------------------------------
 all_final$category[all_final$category=="CB-1H-MFN"]<-"CB-1H-CN"
 all_final$category[all_final$category=="CB-1D-MFN"]<-"CB-1D-CN"
 all_final$category[all_final$category=="SW-24H-MFN"]<-"SW-24H-CN"
-all_final$category[all_final$category=="TFN"]<-"Friendship"
+all_final$category[all_final$category=="TFN"]<-"Social relationship"
 
-all_final$category %<>% factor(levels= c("CB-1H-CN","Friendship","CB-1D-CN","SW-24H-CN"))
+all_final$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+                                         "CB-1D-CN","SW-24H-CN"))
 ##--------------------------------------------------
 all_final$category<- as.factor(all_final$category)
 all_final$included <- as.factor(all_final$included)
@@ -115,7 +117,7 @@ ggsave(
   # filename = "ALL_relative_Pi_FreqNp.pdf", 
   # filename = "ALL_relative_Pi_MeetupNp_part.pdf",
   device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3.2,
   path = "fig/"
 )
 
@@ -156,7 +158,7 @@ ggsave(
   # filename = "ALL_relative_CCE_FreqNp.pdf", 
   # filename = "ALL_relative_CCE_MeetupNp_part.pdf",
   device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3.2,
   path = "fig/"
 )
 
@@ -243,10 +245,10 @@ df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
 
 df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H-CN vs CB-1D-CN"
 df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1H-MFN"]<-"SW-24H-CN vs CB-1H-CN"
-df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H-CN vs Friendship"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H-CN vs Social relationship"
 df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs CB-1H-MFN"]<-"CB-1D-CN vs CB-1H-CN"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D-CN vs Friendship"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H-CN vs Friendship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D-CN vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H-CN vs Social relationship"
 df_vip_sim$Compare<- as.factor(df_vip_sim$Compare)
 
 ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
@@ -336,18 +338,19 @@ ggsave(
 #----plot user cumulative SDLR-------
 vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
                     stringsAsFactors = FALSE)
-# only for part ---------------------
+# # only for part ---------------------
 # vip_CLR <- vip_CLR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
-# vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"Co-locatorship"
-# vip_CLR$category[vip_CLR$category=="TFN"]<-"Friendship"
+# vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"Co-locationship"
+# vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
 
 # only for all ----------------------
 vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"CB-1H-CN"
 vip_CLR$category[vip_CLR$category=="CB-1D-MFN"]<-"CB-1D-CN"
 vip_CLR$category[vip_CLR$category=="SW-24H-MFN"]<-"SW-24H-CN"
-vip_CLR$category[vip_CLR$category=="TFN"]<-"Friendship"
+vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
 vip_CLR <- vip_CLR %>% filter(LR == "USLR")
-vip_CLR$category %<>% factor(levels= c("CB-1H-CN","Friendship","CB-1D-CN","SW-24H-CN"))
+vip_CLR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+                                       "CB-1D-CN","SW-24H-CN"))
 # -----------------------------------
 vip_CLR$included <- as.factor(vip_CLR$included)
 vip_CLR$category<- as.factor(vip_CLR$category)
@@ -384,17 +387,19 @@ ggplot(vip_CLR, aes(x=included, y=mean,
   )
 
 ggsave(
-  # filename = "VIP_cumulative_LR_MeetupNp.pdf", 
-  filename = "VIP_cumulative_LR_MeetupNp_all.pdf", 
+  # filename = "VIP_cumulative_LR_MeetupNp.pdf",
+  filename = "VIP_cumulative_LR_MeetupNp_all.pdf",
   device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3.2,
   path = "fig/"
 )
 
 
 #-------plot for CV----------------------
 
-vip_CV <- read.csv('final/MeetupNp_Rank/150_all_CV_MeetupNp.csv')
+vip_CV <- read.csv('final/MeetupNp_Rank/150_all_CV_MeetupNp.csv', 
+                   stringsAsFactors = FALSE)
+vip_CV$category[vip_CV$category=="Friendship"]<-"Social relationship"
 vip_CV$included <- as.factor(vip_CV$included)
 
 ggplot(vip_CV, aes(x=included, y=mean, 
@@ -430,6 +435,6 @@ ggplot(vip_CV, aes(x=included, y=mean,
 
 ggsave(
   filename = "VIP_CV_MeetupNp.pdf", device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3.2,
   path = "fig/"
 )

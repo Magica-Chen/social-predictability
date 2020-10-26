@@ -38,7 +38,7 @@ df_CE <- rbindlist(list(wp_CE, bk_CE, gw_CE))
 df_CE <- within(df_CE, group[N_previous<150] <- 'useless')
 df_CE$group %<>% factor(levels= c("useless","useful"))
 
-### Histgram for these dataset
+#---------## Histgram for these dataset
 ggplot(df_CE, aes(x = CE_alter)) +
   geom_histogram(aes(fill = group),
     alpha = 0.8, position = "identity", bins = 100
@@ -149,9 +149,9 @@ E = df_true_CE_useful %>%
 
 #------------------------------------------------------
 # Only focus on usefull group's cross-predictability--
-df_CE_useful$category <- 'Co-locatorship'
+df_CE_useful$category <- 'Co-locationship'
 df_CE_useful$meetup <- NULL
-df_true_CE_useful$category <- 'Friendship'
+df_true_CE_useful$category <- 'Social relationship'
 df_useful <- rbindlist(list(df_CE_useful, df_true_CE_useful))
 
 ggplot(df_useful, aes(x = Pi_alter)) +
@@ -160,6 +160,8 @@ ggplot(df_useful, aes(x = Pi_alter)) +
   ) +
   theme(
     legend.title = element_blank(),
+    legend.position="top",
+    legend.text = element_text(size=12),
     legend.spacing.x = unit(0.5, "char"),
     strip.text = element_text(size = 15),
     axis.text = element_text(
@@ -183,7 +185,7 @@ ggplot(df_useful, aes(x = Pi_alter)) +
 
 ggsave(
   filename = "hist_cross_predictability_Np.pdf", device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3,
   path = "fig/"
 )
 
@@ -198,6 +200,8 @@ ggplot(df_useful, aes(x = Pi_alter_rate)) +
     alpha = 0.6, position = "identity") +
   theme(
     legend.title = element_blank(),
+    legend.position="top",
+    legend.text = element_text(size=12),
     legend.spacing.x = unit(0.5, "char"),
     strip.text = element_text(size = 15),
     axis.text = element_text(
@@ -221,6 +225,6 @@ ggplot(df_useful, aes(x = Pi_alter_rate)) +
 
 ggsave(
   filename = "hist_relative_cross_predictability_Np.pdf", device = "pdf",
-  width = 9.90, height = 2.66,
+  width = 9, height = 3,
   path = "fig/"
 )
