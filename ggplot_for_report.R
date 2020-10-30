@@ -8,6 +8,7 @@ library("boot")
 library("scales")
 library("magrittr")
 
+# ---------Global settings------------
 theme_set(
   theme_bw() +
     theme(legend.position = "top")
@@ -291,12 +292,30 @@ ggsave(
 )
 
 
-#----plot user USLR and SLR--------
+#----plot user ODLR--------
 # vip_LR <- read.csv('final/150_all_LR_CP.csv')
-# vip_LR <- read.csv('final/MeetupNp_Rank/150_all_LR_MeetupNp.csv')
+# vip_LR <- read.csv('final/FreqNp_Rank/150_all_LR_FreqNp.csv')
+vip_LR <- read.csv('final/MeetupNp_Rank/150_all_LR_MeetupNp.csv',
+                   stringsAsFactors = FALSE)
+# # # only for part ---------------------
+# vip_LR <- vip_LR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
+# vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"Co-locationship"
+# vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
 
-vip_LR <- read.csv('final/FreqNp_Rank/150_all_LR_FreqNp.csv')
+
+# only for all ----------------------
+vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"CB-1H-CN"
+vip_LR$category[vip_LR$category=="CB-1D-MFN"]<-"CB-1D-CN"
+vip_LR$category[vip_LR$category=="SW-24H-MFN"]<-"SW-24H-CN"
+vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
+vip_LR <- vip_LR %>% filter(LR == "USLR")
+vip_LR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+                                       "CB-1D-CN","SW-24H-CN"))
+
+# ----------------------------------------------
 vip_LR$included <- as.factor(vip_LR$included)
+vip_LR$category<- as.factor(vip_LR$category)
+
 
 ggplot(vip_LR, aes(x=included, y=mean, 
                       # shape=category,
@@ -322,20 +341,23 @@ ggplot(vip_LR, aes(x=included, y=mean,
   ) +  catscale10 + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
-  facet_grid(LR~dataset, 
-             scales = "free_y") + 
-  labs(x ='Rank', y='')
+  facet_wrap(~dataset, 
+             scales = "free_y") +  
+  labs(x = "Alter's Rank", 
+       y = unname(TeX(c("$\\eta_{ego}(alter)")))
+  )
 
 ggsave(
   # filename = "VIP_LR_CP.pdf", 
-  # filename = "VIP_LR_MeetupNp.pdf", 
-  filename = "VIP_LR_FreqNp.pdf", 
+  # filename = "VIP_LR_MeetupNp.pdf",
+  # filename = "VIP_LR_FreqNp.pdf", 
+  filename = "VIP_LR_MeetupNp_All.pdf",
   device = "pdf",
-  width = 9.02, height = 4.15,
+  width = 9, height = 3.2,
   path = "fig/"
 )
 
-#----plot user cumulative SDLR-------
+#----plot user cumulative ODLR-------
 vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
                     stringsAsFactors = FALSE)
 # # only for part ---------------------
