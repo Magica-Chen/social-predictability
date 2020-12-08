@@ -7,6 +7,7 @@ library("latex2exp")
 library("boot")
 library("scales")
 library("magrittr")
+library("ggpubr")
 
 # ---------Global settings------------
 theme_set(
@@ -76,13 +77,20 @@ all_final$category[all_final$category=="CB-1D-MFN"]<-"CB-1D-CN"
 all_final$category[all_final$category=="SW-24H-MFN"]<-"SW-24H-CN"
 all_final$category[all_final$category=="TFN"]<-"Social relationship"
 
-all_final$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+# all_final$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+#                                          "CB-1D-CN","SW-24H-CN"))
+all_final <- subset(all_final, category %in% c("CB-1H-CN",
+                                                "CB-1D-CN",
+                                                "SW-24H-CN") 
+)
+all_final$category %<>% factor(levels= c("CB-1H-CN",
                                          "CB-1D-CN","SW-24H-CN"))
+
 ##--------------------------------------------------
 all_final$category<- as.factor(all_final$category)
 all_final$included <- as.factor(all_final$included)
 
-ggplot(all_final, aes(x=included, y=mean, 
+Pi_alters <- ggplot(all_final, aes(x=included, y=mean, 
                       # shape=category,
                       color=category)) + 
   geom_point(size=3) +
@@ -112,6 +120,8 @@ ggplot(all_final, aes(x=included, y=mean,
        y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
   )
 
+print(Pi_alters)
+
 ggsave(
   # filename = "ALL_relative_Pi_CP.pdf", 
   filename = "ALL_relative_Pi_MeetupNp.pdf",
@@ -123,7 +133,7 @@ ggsave(
 )
 
 ## CCE plot for all categories
-ggplot(all_final, aes(x=included, y=mean_CCE, 
+CCE_alters <- ggplot(all_final, aes(x=included, y=mean_CCE, 
                       # shape=category,
                       color=category)) + 
   geom_point(size=3) +
@@ -153,6 +163,8 @@ ggplot(all_final, aes(x=included, y=mean_CCE,
        y = unname(TeX(c("$S_{alters}/ \\S_{ego}")))
   )
 
+print(CCE_alters)
+
 ggsave(
   # filename = "ALL_relative_CCE_CP.pdf", 
   filename = "ALL_relative_CCE_MeetupNp.pdf",
@@ -163,7 +175,17 @@ ggsave(
   path = "fig/"
 )
 
+# Combine two into one
+ggarrange(
+  CCE_alters, Pi_alters, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
 
+ggsave(
+  filename = "ALL_RCCE_RCCP_MeetupNp3.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"  
+)
 
 #------plot user Jaccard similarity-----------------
 # wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user_CP.csv')
@@ -244,12 +266,17 @@ df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
 # 
 # Only for all ---------------------------------
 
-df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H-CN vs CB-1D-CN"
-df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1H-MFN"]<-"SW-24H-CN vs CB-1H-CN"
-df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H-CN vs Social relationship"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs CB-1H-MFN"]<-"CB-1D-CN vs CB-1H-CN"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D-CN vs Social relationship"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H-CN vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H vs CB-1D"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1H-MFN"]<-"SW-24H vs CB-1H"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs CB-1H-MFN"]<-"CB-1D vs CB-1H"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H vs Social relationship"
+
+df_vip_sim <- subset(df_vip_sim, Compare %in% c("SW-24H vs CB-1D",
+                                                "SW-24H vs CB-1H",
+                                                "CB-1D vs CB-1H") 
+                     )
 df_vip_sim$Compare<- as.factor(df_vip_sim$Compare)
 
 ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
@@ -260,7 +287,7 @@ ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
   geom_boxplot() +
   theme(
     legend.title = element_blank(),
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+    axis.text.x = element_text(vjust = 1, hjust=0.5),
     legend.position = "none",
     strip.text = element_text(size = 15),
     legend.text = element_text(
@@ -284,40 +311,38 @@ ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
 
 ggsave(
   # filename = "VIP_similarity_user_CP.pdf",
-  filename = "VIP_similarity_user_MeetupNp.pdf",
+  filename = "VIP_similarity_user_MeetupNp3.pdf",
   # filename = "VIP_similarity_user_FreqNp.pdf",
   device = "pdf",
-  width = 10.5, height = 8.7,
+  width = 6.5, height = 4.5,
   path = "fig/"
 )
 
 
-#----plot user ODLR--------
+#----plot user ODLR and CODLR all--------
 # vip_LR <- read.csv('final/150_all_LR_CP.csv')
 # vip_LR <- read.csv('final/FreqNp_Rank/150_all_LR_FreqNp.csv')
 vip_LR <- read.csv('final/MeetupNp_Rank/150_all_LR_MeetupNp.csv',
                    stringsAsFactors = FALSE)
-# # # only for part ---------------------
-# vip_LR <- vip_LR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
-# vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"Co-locationship"
-# vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
 
+# only for all
 
-# only for all ----------------------
 vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"CB-1H-CN"
 vip_LR$category[vip_LR$category=="CB-1D-MFN"]<-"CB-1D-CN"
 vip_LR$category[vip_LR$category=="SW-24H-MFN"]<-"SW-24H-CN"
 vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
-vip_LR <- vip_LR %>% filter(LR == "USLR")
-vip_LR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
-                                       "CB-1D-CN","SW-24H-CN"))
-
+# vip_LR <- vip_LR %>% filter(LR == "USLR")
+# vip_LR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+#                                        "CB-1D-CN","SW-24H-CN"))
+vip_LR <- vip_LR %>% filter((LR == "USLR") & (category!="Social relationship"))
+vip_LR$category %<>% factor(levels= c("CB-1H-CN",
+                                      "CB-1D-CN","SW-24H-CN"))
 # ----------------------------------------------
 vip_LR$included <- as.factor(vip_LR$included)
 vip_LR$category<- as.factor(vip_LR$category)
 
 
-ggplot(vip_LR, aes(x=included, y=mean, 
+ODLR_all <- ggplot(vip_LR, aes(x=included, y=mean, 
                       # shape=category,
                       color=category)) + 
   geom_point(size=3) +
@@ -346,6 +371,7 @@ ggplot(vip_LR, aes(x=included, y=mean,
   labs(x = "Alter's Rank", 
        y = unname(TeX(c("$\\eta_{ego}(alter)")))
   )
+print(ODLR_all)
 
 ggsave(
   # filename = "VIP_LR_CP.pdf", 
@@ -360,24 +386,24 @@ ggsave(
 #----plot user cumulative ODLR-------
 vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
                     stringsAsFactors = FALSE)
-# # only for part ---------------------
-# vip_CLR <- vip_CLR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
-# vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"Co-locationship"
-# vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
 
-# only for all ----------------------
+# only for all
 vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"CB-1H-CN"
 vip_CLR$category[vip_CLR$category=="CB-1D-MFN"]<-"CB-1D-CN"
 vip_CLR$category[vip_CLR$category=="SW-24H-MFN"]<-"SW-24H-CN"
 vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
-vip_CLR <- vip_CLR %>% filter(LR == "USLR")
-vip_CLR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+# vip_CLR <- vip_CLR %>% filter(LR == "USLR")
+# vip_CLR$category %<>% factor(levels= c("CB-1H-CN","Social relationship",
+#                                        "CB-1D-CN","SW-24H-CN"))
+vip_CLR <- vip_CLR %>% filter((LR == "USLR") & (category!="Social relationship"))
+vip_CLR$category %<>% factor(levels= c("CB-1H-CN",
                                        "CB-1D-CN","SW-24H-CN"))
+
 # -----------------------------------
 vip_CLR$included <- as.factor(vip_CLR$included)
 vip_CLR$category<- as.factor(vip_CLR$category)
 
-ggplot(vip_CLR, aes(x=included, y=mean, 
+CODLR_all <- ggplot(vip_CLR, aes(x=included, y=mean, 
                    # shape=category,
                    color=category)) + 
   geom_point(size=3) +
@@ -408,6 +434,8 @@ ggplot(vip_CLR, aes(x=included, y=mean,
        y = unname(TeX(c("$\\eta_{ego}(alters)")))
   )
 
+print(CODLR_all)
+
 ggsave(
   # filename = "VIP_cumulative_LR_MeetupNp.pdf",
   filename = "VIP_cumulative_LR_MeetupNp_all.pdf",
@@ -415,6 +443,120 @@ ggsave(
   width = 9, height = 3.2,
   path = "fig/"
 )
+
+# Combine them into one plot (cumulative)
+ggarrange(
+  ODLR_all, CODLR_all, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "VIP_CCP_VS_ODLR_CODLR_MeetupNp_all.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"  
+)
+
+
+
+#------------ combine ODLR1 and CODLR1---------
+vip_LR <- read.csv('final/MeetupNp_Rank/150_all_LR_MeetupNp.csv',
+                   stringsAsFactors = FALSE)
+# only for part 
+vip_LR <- vip_LR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
+vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"Co-locationship"
+vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
+
+vip_LR$included <- as.factor(vip_LR$included)
+vip_LR$category<- as.factor(vip_LR$category)
+
+
+ODLR1 <- ggplot(vip_LR, aes(x=included, y=mean, 
+                            # shape=category,
+                            color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") +  
+  labs(x = "Alter's Rank", 
+       y = unname(TeX(c("$\\eta_{ego}(alter)")))
+  )
+print(ODLR1)
+
+# Cumulative 
+vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
+                    stringsAsFactors = FALSE)
+# only for part 
+vip_CLR <- vip_CLR %>% filter((LR == "USLR") & (category %in% c("CB-1H-MFN", 'TFN')))
+vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"Co-locationship"
+vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
+
+vip_CLR$included <- as.factor(vip_CLR$included)
+vip_CLR$category<- as.factor(vip_CLR$category)
+
+CODLR1 <- ggplot(vip_CLR, aes(x=included, y=mean, 
+                              # shape=category,
+                              color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\eta_{ego}(alters)")))
+  )
+
+print(CODLR1)
+
+# Combine them into one plot
+ggarrange(
+  ODLR1, CODLR1, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "VIP_CCP_VS_ODLR_CODLR_MeetupNp.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"  
+)
+
 
 
 #-------plot for CV----------------------

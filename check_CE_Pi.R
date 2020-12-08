@@ -4,6 +4,7 @@ library("ggplot2")
 library("reshape2")
 library("latex2exp")
 library("magrittr")
+library("ggpubr")
 
 theme_set(
   theme_bw() +
@@ -154,7 +155,7 @@ df_CE_useful$meetup <- NULL
 df_true_CE_useful$category <- 'Social relationship'
 df_useful <- rbindlist(list(df_CE_useful, df_true_CE_useful))
 
-ggplot(df_useful, aes(x = Pi_alter)) +
+p <- ggplot(df_useful, aes(x = Pi_alter)) +
   geom_density(aes(fill = category,  color=category),
     alpha = 0.6, position = "identity"
   ) +
@@ -182,6 +183,7 @@ ggplot(df_useful, aes(x = Pi_alter)) +
   ) +
   facet_wrap(~dataset, scales = "free") +
   labs(x = unname(TeX(c("Cross-predictability $\\Pi_{ego, alter}"))))
+print(p)
 
 ggsave(
   filename = "hist_cross_predictability_Np.pdf", device = "pdf",
@@ -195,7 +197,7 @@ ggsave(
 df_useful$Pi_alter_rate <- (df_useful$Pi_alter) / (df_useful$Pi)
 df_useful <- df_useful[df_useful$Pi_alter_rate < 5, ]
 
-ggplot(df_useful, aes(x = Pi_alter_rate)) +
+q <- ggplot(df_useful, aes(x = Pi_alter_rate)) +
   geom_density(aes(fill = category, color=category),
     alpha = 0.6, position = "identity") +
   theme(
@@ -223,8 +225,65 @@ ggplot(df_useful, aes(x = Pi_alter_rate)) +
   facet_wrap(~dataset, scales = "free") +
   labs(x = unname(TeX(c("Relative cross-predictability $R_{alter|ego}"))))
 
+print(q)
+
 ggsave(
   filename = "hist_relative_cross_predictability_Np.pdf", device = "pdf",
   width = 9, height = 3,
+  path = "fig/"
+)
+
+
+#--------------
+# put p and q together
+ggarrange(
+  p, q, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "density_CP_RCP_Np.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"  
+)
+
+
+#--------------
+# only useful both CE and PI over three datasets.
+
+df_useful_both <- df_useful %>% select(CE_alter, Pi_alter, dataset, category)
+
+ggplot(df_useful_both, aes(x = CE_alter)) +
+  geom_density(aes(fill = dataset, color=dataset),
+               alpha = 0.6, position = "identity"
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  facet_wrap(~category, scales = "free") + 
+  labs(x = "LZ cross-entropy (bit)")
+
+ggsave(
+  filename = "density_CE_dataset_CLN_VS_SRN.pdf", device = "pdf",
+  width = 9.00, height = 2.96,
   path = "fig/"
 )

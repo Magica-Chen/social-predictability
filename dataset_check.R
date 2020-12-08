@@ -44,8 +44,60 @@ df_predictability <- df %>% select(userid, Shannon.Pi, LZ.Pi, dataset)
 df_predictability_melt <- melt(df_predictability,
   id.vars = c("userid", "dataset")
 )
+#--------------------
+# focus on LZ entropy and datasets only
 
-###  Plot for entropy histgram
+df_together <- df %>% select(userid, LZ.Entropy, LZ.Pi, dataset)
+
+df_together = rename(df_together, 
+                     'Entropy (bit)' = 'LZ.Entropy', 
+                     'Predictability' = 'LZ.Pi'
+                     )
+df_together_melt <- melt(df_together,
+                         id.vars = c("userid", "dataset")
+)
+
+ggplot(df_together_melt, aes(x = value)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.7, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
+  facet_wrap(~variable, scales = "free") + 
+  labs(x = " ")
+
+ggsave(
+  filename = "LZ_entropy_Pi_dataset.pdf", device = "pdf",
+  width = 9.90, height = 2.96,
+  path = "fig/"
+)
+
+
+
+
+
+#-------------------------------------------
+# Plot for entropy histgram
 ggplot(df_entropy_melt, aes(x = value)) +
   geom_histogram(aes(fill = variable),
     alpha = 0.8, position = "identity", bins = 100
