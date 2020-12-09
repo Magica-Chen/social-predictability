@@ -40,7 +40,7 @@ df_CE <- within(df_CE, group[N_previous<150] <- 'useless')
 df_CE$group %<>% factor(levels= c("useless","useful"))
 
 #---------## Histgram for these dataset
-ggplot(df_CE, aes(x = CE_alter)) +
+f1 <- ggplot(df_CE, aes(x = CE_alter)) +
   geom_histogram(aes(fill = group),
     alpha = 0.8, position = "identity", bins = 100
   ) +
@@ -69,6 +69,8 @@ ggplot(df_CE, aes(x = CE_alter)) +
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
   facet_wrap(~dataset, scales = "free") +
   labs(x = "LZ cross-entropy (bit)") 
+
+print(f1)
 
 ggsave(
   filename = "hist_CE_Np.pdf", device = "pdf",
@@ -99,7 +101,7 @@ df_true_CE <- within(df_true_CE, group[N_previous<150] <- 'useless')
 df_true_CE$group %<>% factor(levels= c("useless","useful"))
 
 ### Histgram for these dataset
-ggplot(df_true_CE, aes(x = CE_alter)) +
+f2 <- ggplot(df_true_CE, aes(x = CE_alter)) +
   geom_histogram(aes(fill = group),
                  alpha = 0.8, position = "identity", bins = 100
   ) +
@@ -129,9 +131,23 @@ ggplot(df_true_CE, aes(x = CE_alter)) +
   facet_wrap(~dataset, scales = "free") +
   labs(x = "LZ cross-entropy (bit)")
 
+print(f2)
+
 ggsave(
   filename = "hist_true_CE_Np.pdf", device = "pdf",
   width = 9.90, height = 2.66,
+  path = "fig/"
+)
+
+# put p and q together
+ggarrange(
+  f1, f2, labels = c("A", "B"), nrow = 2, ncol = 1
+  # common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "hist_CLN_SRN_Np.pdf", device = "pdf",
+  width = 9, height = 5,
   path = "fig/"
 )
 

@@ -220,50 +220,67 @@ gw_vip_sim$dataset <- 'Gowalla'
 
 df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
 
-# only for part ----------------------------------
-# df_vip_sim <- df_vip_sim %>% filter(Compare == "CB-1H-MFN vs TFN")
-# ggplot(df_vip_sim, aes(x=dataset, y=Jaccard,
-#                        # shape=category,
-#                        fill=dataset
-#                        # color=Compare,
-# )) +
-#   geom_boxplot(width=0.5) +
-#   theme(
-#     legend.title = element_blank(),
-#     axis.text.x = element_text(vjust = 0.5, hjust=0.5),
-#     legend.position = "none",
-#     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-#   ) +  catscale10  + catscale10_2  +
-#   labs(x='', y='Local Jaccard Similarity')
-# 
-# ggsave(
-#   filename = "VIP_similarity_user_MeetupNp_part.pdf", 
-#   device = "pdf",
-#   width = 2.45, height = 2.32,
-#   path = "fig/"
-# )
-# 
-# 
-# dataset = c('BrightKite', 'Gowalla', 'Weeplace')
-# sim = c(0.48, 0.53, 0.5)
-# df_vip_sim_network <- data.frame(dataset, sim )
-# ggplot(df_vip_sim_network, aes(x=dataset, y=sim, fill=dataset)) +
-#   geom_bar(stat="identity", width=0.5) + 
-#   theme(
-#     legend.title = element_blank(),
-#     axis.text.x = element_text(vjust = 0.5, hjust=0.5),
-#     legend.position = "none",
-#     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-#   ) +  catscale10  + catscale10_2  +
-#   labs(x='', y='Global Jaccard Similarity')
-# 
-# ggsave(
-#   filename = "VIP_similarity_MeetupNp_part.pdf", 
-#   device = "pdf",
-#   width = 2.45, height = 2.32,
-#   path = "fig/"
-# )
-# 
+# only for two parts----------------------------------
+df_vip_sim <- df_vip_sim %>% filter(Compare == "CB-1H-MFN vs TFN")
+j1 <- ggplot(df_vip_sim, aes(x=dataset, y=Jaccard,
+                       # shape=category,
+                       fill=dataset
+                       # color=Compare,
+)) +
+  geom_boxplot(width=0.5) +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(vjust = 0.5, hjust=0.5),
+    legend.position = "none",
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2  +
+  labs(x='', y='Local Jaccard Similarity')
+print(j1)
+
+ggsave(
+  filename = "VIP_similarity_user_MeetupNp_part.pdf",
+  device = "pdf",
+  width = 2.45, height = 2.32,
+  path = "fig/"
+)
+
+
+dataset = c('BrightKite', 'Gowalla', 'Weeplace')
+sim = c(0.48, 0.53, 0.5)
+df_vip_sim_network <- data.frame(dataset, sim )
+j2 <- ggplot(df_vip_sim_network, aes(x=dataset, y=sim, fill=dataset)) +
+  geom_bar(stat="identity", width=0.5) +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(vjust = 0.5, hjust=0.5),
+    legend.position = "none",
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2  +
+  labs(x='', y='Global Jaccard Similarity')
+print(j2)
+
+ggsave(
+  filename = "VIP_similarity_MeetupNp_part.pdf",
+  device = "pdf",
+  width = 2.45, height = 2.32,
+  path = "fig/"
+)
+
+# combine them into one
+ggarrange(
+  j2, j1, labels = c("A", "B"), nrow = 1, ncol = 2
+)
+
+ggsave(
+  filename = "VIP_similarity_Jaccard_MeetupNp_combined.pdf",
+  device = "pdf",
+  width = 5, height = 2.6,
+  path = "fig/"
+)
+
+
+
+
 # Only for all ---------------------------------
 
 df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H vs CB-1D"
