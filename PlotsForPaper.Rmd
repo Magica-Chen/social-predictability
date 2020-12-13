@@ -1,0 +1,1150 @@
+---
+title: "Using 'Co-locationship' as an Alternative to Social Ties inPredictability of Human Mobility"
+author: "Zexun CHEN"
+date: "13/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("data.table")
+library("dplyr")
+library("ggplot2")
+library("reshape2")
+library("latex2exp")
+library("magrittr")
+library("ggpubr")
+
+theme_set(
+  theme_bw() +
+    theme(legend.position = "right")
+)
+
+colors_10 <- c(
+  "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+  "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+)
+catscale10 <- scale_colour_manual(values = colors_10)
+catscale10_2 <- scale_fill_manual(values = colors_10)
+```
+
+## Dataset Check
+
+First of all, we obtain the results from three datasets. and then generate plots of LZ entropy, predictability, Shannon entropy and the corresponding predictability.
+
+```{r Extract results, echo=FALSE}
+wp <- read.csv("final/wp-150/wp-dataset-basic.csv")
+bk <- read.csv("final/bk-150/bk-dataset-basic.csv")
+gw <- read.csv("final/gws-150/gws-dataset-basic.csv")
+
+wp <- na.omit(wp)
+bk <- na.omit(bk)
+gw <- na.omit(gw)
+
+wp$dataset <- "Weeplaces"
+bk$dataset <- "BrightKite"
+gw$dataset <- "Gowalla"
+bk[, 1] <- sapply(bk[, 1], as.factor)
+gw[, 1] <- sapply(gw[, 1], as.factor)
+
+df <- do.call("rbind", list(wp, bk, gw))
+
+
+df_entropy <- df %>% select(userid, Shannon.Entropy, LZ.Entropy, dataset)
+df_entropy_melt <- melt(df_entropy,
+  id.vars = c("userid", "dataset")
+)
+
+df_predictability <- df %>% select(userid, Shannon.Pi, LZ.Pi, dataset)
+df_predictability_melt <- melt(df_predictability,
+  id.vars = c("userid", "dataset")
+)
+```
+
+### Focus on LZ entropy and datasets only
+
+```{r LZ_entropy_Pi, echo=FALSE}
+df_together <- df %>% select(userid, LZ.Entropy, LZ.Pi, dataset)
+
+df_together = rename(df_together, 
+                     'Entropy (bit)' = 'LZ.Entropy', 
+                     'Predictability' = 'LZ.Pi'
+                     )
+df_together_melt <- melt(df_together,
+                         id.vars = c("userid", "dataset")
+)
+
+ggplot(df_together_melt, aes(x = value)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.7, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
+  facet_wrap(~variable, scales = "free") + 
+  labs(x = " ")
+
+ggsave(
+  filename = "LZ_entropy_Pi_dataset.pdf", device = "pdf",
+  width = 9.90, height = 2.96,
+  path = "fig/"
+)
+```
+
+### Entropy histgram (Shanno vs LZ)
+
+```{r Hist_entropy, echo=FALSE}
+ggplot(df_entropy_melt, aes(x = value)) +
+  geom_histogram(aes(fill = variable),
+    alpha = 0.8, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    labels = unname(TeX(c("$S_{SN}", "$S_{LZ}"))),
+    values = colors_10[1:2]
+  ) +
+  # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
+  facet_wrap(~dataset) +
+  labs(x = "Entropy (bit)")
+
+ggsave(
+  filename = "hist_entropy.pdf", device = "pdf",
+  width = 9.90, height = 2.66,
+  path = "fig/"
+)
+
+```
+
+### Predictability histgram (Shanno vs LZ)
+
+```{r Hist_predictabiliy, echo=FALSE}
+ggplot(df_predictability_melt, aes(x = value)) +
+  geom_histogram(aes(fill = variable),
+    alpha = 0.8, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    labels = unname(TeX(c("$\\Pi_{SN}", "$\\Pi_{LZ}"))),
+    values = colors_10[3:4]
+  ) +
+  facet_wrap(~dataset) +
+  labs(x = "Predictability")
+
+ggsave(
+  filename = "hist_predictability.pdf", device = "pdf",
+  width = 9.90, height = 2.66,
+  path = "fig/"
+)
+
+```
+
+
+## Cross-entropy
+
+This section is used to present all plots related to pairwise cross-entropy.
+
+```{r Extract_CE_results, echo=FALSE}
+## For 1-H Colocationship
+wp_CE <- read.csv("temp_data/wp-150/wp-150-H/wp_CE_over1.csv")
+bk_CE <- read.csv("temp_data/bk-150/bk-150-H/bk_CE_over1.csv")
+gw_CE <- read.csv("temp_data/gws-150/gws-150-H/gws_CE_over1.csv")
+
+
+wp_CE <- wp_CE[!is.na(wp_CE$CE_alter), ]
+bk_CE <- bk_CE[!is.na(bk_CE$CE_alter), ]
+gw_CE <- gw_CE[!is.na(gw_CE$CE_alter), ]
+
+
+wp_CE$dataset <- "Weeplaces"
+bk_CE$dataset <- "BrightKite"
+gw_CE$dataset <- "Gowalla"
+
+df_CE <- rbindlist(list(wp_CE, bk_CE, gw_CE))
+# add a N_previous requirement M_previous >=150
+df_CE <- within(df_CE, group[N_previous<150] <- 'useless')
+df_CE$group %<>% factor(levels= c("useless","useful"))
+
+## For Social Relationship
+wp_true_CE <- read.csv("temp_data/wp-150/wp-true_CE.csv")
+bk_true_CE <- read.csv("temp_data/bk-150/bk-true_CE.csv")
+gw_true_CE <- read.csv("temp_data/gws-150/gws-true_CE.csv")
+
+
+wp_true_CE <- wp_true_CE[!is.na(wp_true_CE$CE_alter), ]
+bk_true_CE <- bk_true_CE[!is.na(bk_true_CE$CE_alter), ]
+gw_true_CE <- gw_true_CE[!is.na(gw_true_CE$CE_alter), ]
+
+
+wp_true_CE$dataset <- "Weeplaces"
+bk_true_CE$dataset <- "BrightKite"
+gw_true_CE$dataset <- "Gowalla"
+
+df_true_CE <- rbindlist(list(wp_true_CE, bk_true_CE, gw_true_CE))
+# add a N_previous requirement M_previous >=150
+df_true_CE <- within(df_true_CE, group[N_previous<150] <- 'useless')
+df_true_CE$group %<>% factor(levels= c("useless","useful"))
+```
+
+### CE for co-locationship
+
+```{r CE_CN, echo=FALSE}
+f1 <- ggplot(df_CE, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = group),
+    alpha = 0.8, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    # labels = unname(TeX(c("Useful", "$Useless"))),
+    values = colors_10[8:9]
+  ) +
+  # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
+  facet_wrap(~dataset, scales = "free") +
+  labs(x = "LZ cross-entropy (bit)") 
+
+print(f1)
+
+ggsave(
+  filename = "hist_CE_Np.pdf", device = "pdf",
+  width = 9.90, height = 2.66,
+  path = "fig/"
+)
+```
+
+### CE for social relationship
+
+```{r CE_True, echo=FALSE}
+f2 <- ggplot(df_true_CE, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = group),
+                 alpha = 0.8, position = "identity", bins = 100
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    # labels = unname(TeX(c("Useful", "$Useless"))),
+    values = c(colors_10[8], colors_10[10])
+  ) +
+  # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
+  facet_wrap(~dataset, scales = "free") +
+  labs(x = "LZ cross-entropy (bit)")
+
+print(f2)
+
+ggsave(
+  filename = "hist_true_CE_Np.pdf", device = "pdf",
+  width = 9.90, height = 2.66,
+  path = "fig/"
+)
+
+```
+
+### Combine CE for co-locationship and social relationship
+```{r CE_combine, echo=FALSE}
+# put p and q together
+ggarrange(
+  f1, f2, labels = c("A", "B"), nrow = 2, ncol = 1
+  # common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "hist_CLN_SRN_Np.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"
+)
+
+```
+
+### Cross-predictability on useful alters only
+
+```{r CP_useful, echo=FALSE}
+df_CE_useful <- df_CE[df_CE$group == "useful", ]
+df_true_CE_useful <- df_true_CE[df_true_CE$group == "useful", ]
+
+df_CE_useful$category <- 'Co-locationship'
+df_CE_useful$meetup <- NULL
+df_true_CE_useful$category <- 'Social relationship'
+df_useful <- rbindlist(list(df_CE_useful, df_true_CE_useful))
+```
+
+```{r CP_useful_plot, echo=FALSE}
+p <- ggplot(df_useful, aes(x = Pi_alter)) +
+  geom_density(aes(fill = category,  color=category),
+    alpha = 0.6, position = "identity"
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.position="top",
+    legend.text = element_text(size=12),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  facet_wrap(~dataset, scales = "free") +
+  labs(x = unname(TeX(c("Cross-predictability $\\Pi_{ego, alter}"))))
+print(p)
+
+ggsave(
+  filename = "hist_cross_predictability_Np.pdf", device = "pdf",
+  width = 9, height = 3,
+  path = "fig/"
+)
+```
+
+### Relative Cross-predictability on useful alters only
+
+```{r relativeCCP_useful, echo=FALSE}
+df_useful$Pi_alter_rate <- (df_useful$Pi_alter) / (df_useful$Pi)
+df_useful <- df_useful[df_useful$Pi_alter_rate < 5, ]
+
+q <- ggplot(df_useful, aes(x = Pi_alter_rate)) +
+  geom_density(aes(fill = category, color=category),
+    alpha = 0.6, position = "identity") +
+  theme(
+    legend.title = element_blank(),
+    legend.position="top",
+    legend.text = element_text(size=12),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  facet_wrap(~dataset, scales = "free") +
+  labs(x = unname(TeX(c("Relative cross-predictability $R_{alter|ego}"))))
+
+print(q)
+
+ggsave(
+  filename = "hist_relative_cross_predictability_Np.pdf", device = "pdf",
+  width = 9, height = 3,
+  path = "fig/"
+)
+```
+
+### Combine CCP and Retive CCP together
+
+```{r combine_CCP_RCCP, echo=FALSE}
+ggarrange(
+  p, q, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "density_CP_RCP_Np.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"
+)
+
+```
+
+### Focus on useful both CE and PI over three datasets
+
+```{r CE_Pi_Both, echo=FALSE}
+df_useful_both <- df_useful %>% select(CE_alter, Pi_alter, dataset, category)
+
+ggplot(df_useful_both, aes(x = CE_alter)) +
+  geom_density(aes(fill = dataset, color=dataset),
+               alpha = 0.6, position = "identity"
+  ) +
+  theme(
+    legend.title = element_blank(),
+    legend.spacing.x = unit(0.5, "char"),
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  facet_wrap(~category, scales = "free") + 
+  labs(x = "LZ cross-entropy (bit)")
+
+ggsave(
+  filename = "density_CE_dataset_CLN_VS_SRN.pdf", device = "pdf",
+  width = 9.00, height = 2.96,
+  path = "fig/"
+)
+
+```
+
+
+## Cumulative Cros-entropy
+This section is used to generate all plots for CCP, CCE.
+
+```{r Final_data_extract, echo=FALSE}
+theme_set(
+  theme_bw() +
+    theme(legend.position = "top")
+)
+
+all_final <- read.csv('final/MeetupNp_Rank/150_all_category_MeetupNp.csv', 
+                      stringsAsFactors = FALSE)
+
+all_final$dataset[all_final$dataset=="Weeplace"]<-"Weeplaces"
+all_final$category[all_final$category=="CB-1H-MFN"]<-"CB-1H-CN"
+all_final$category[all_final$category=="CB-1D-MFN"]<-"CB-1D-CN"
+all_final$category[all_final$category=="SW-24H-MFN"]<-"SW-24H-CN"
+all_final$category[all_final$category=="TFN"]<-"Social relationship"
+```
+### RCCP Co-locationship vs Social relationship
+
+```{r CCP_CN_vs_SN, echo=FALSE}
+all_final_CN_SN <- subset(all_final, category %in% c("CB-1H-CN",
+                                                "Social relationship"))
+                                                
+all_final_CN_SN $category<- as.factor(all_final_CN_SN $category)
+all_final_CN_SN $included <- as.factor(all_final_CN_SN $included)
+
+Pi_alters <- ggplot(all_final_CN_SN , aes(x=included, y=mean, 
+                      # shape=category,
+                      color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, scales = "free") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+  )
+
+print(Pi_alters)
+
+ggsave(
+  filename = "ALL_relative_Pi_MeetupNp_part.pdf",
+  device = "pdf",
+  width = 9, height = 3.2,
+  path = "fig/"
+)
+
+```
+
+### RCCP different Co-locationships
+
+```{r CCP_CNs, echo=FALSE}
+all_final_CNs <- subset(all_final, category %in% c("CB-1H-CN",
+                                                "CB-1D-CN",
+                                                "SW-24H-CN") 
+)
+all_final_CNs$category %<>% factor(levels= c("CB-1H-CN",
+                                         "CB-1D-CN","SW-24H-CN"))
+                                                
+all_final_CNscategory<- as.factor(all_final_CNs$category)
+all_final_CNs$included <- as.factor(all_final_CNs$included)
+
+Pi_alters <- ggplot(all_final_CNs, aes(x=included, y=mean, 
+                      # shape=category,
+                      color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, scales = "free") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+  )
+
+print(Pi_alters)
+
+ggsave(
+  filename = "ALL_relative_Pi_MeetupNp3.pdf",
+  device = "pdf",
+  width = 9, height = 3.2,
+  path = "fig/"
+)
+
+```
+
+
+## Similarity 
+This section is used to generate all plots for similarity comparison.
+
+```{r similarity_data, echo=FALSE}
+wp_vip_sim <- read.csv('final/wp-150/wp_VIP_similarity_user_MeetupNp.csv', 
+                       stringsAsFactors = FALSE)
+wp_vip_sim$dataset <- 'Weeplaces'
+
+bk_vip_sim <- read.csv('final/bk-150/bk_VIP_similarity_user_MeetupNp.csv', 
+                       stringsAsFactors = FALSE)
+bk_vip_sim$dataset <- 'BrightKite'
+
+gw_vip_sim <- read.csv('final/gws-150/gws_VIP_similarity_user_MeetupNp.csv', 
+                       stringsAsFactors = FALSE)
+gw_vip_sim$dataset <- 'Gowalla'
+
+df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
+```
+
+### Similarity (Co-locationship vs social relationship)
+
+```{r similarity_vs2, echo=FALSE}
+df_vip_sim_2 <- df_vip_sim %>% filter(Compare == "CB-1H-MFN vs TFN")
+j1 <- ggplot(df_vip_sim_2, aes(x=dataset, y=Jaccard,
+                       # shape=category,
+                       fill=dataset
+                       # color=Compare,
+)) +
+  geom_boxplot(width=0.5) +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(vjust = 0.5, hjust=0.5),
+    legend.position = "none",
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2  +
+  labs(x='', y='Local Jaccard Similarity')
+print(j1)
+
+# ggsave(
+#   filename = "VIP_similarity_user_MeetupNp_part.pdf",
+#   device = "pdf",
+#   width = 2.45, height = 2.32,
+#   path = "fig/"
+# )
+
+
+dataset = c('BrightKite', 'Gowalla', 'Weeplaces')
+sim = c(0.48, 0.53, 0.5)
+df_vip_sim_network <- data.frame(dataset, sim )
+j2 <- ggplot(df_vip_sim_network, aes(x=dataset, y=sim, fill=dataset)) +
+  geom_bar(stat="identity", width=0.5) +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(vjust = 0.5, hjust=0.5),
+    legend.position = "none",
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2  +
+  labs(x='', y='Global Jaccard Similarity')
+print(j2)
+
+# ggsave(
+#   filename = "VIP_similarity_MeetupNp_part.pdf",
+#   device = "pdf",
+#   width = 2.45, height = 2.32,
+#   path = "fig/"
+# )
+
+# combine them into one
+ggarrange(
+  j2, j1, labels = c("A", "B"), nrow = 1, ncol = 2
+)
+
+ggsave(
+  filename = "VIP_similarity_Jaccard_MeetupNp_combined.pdf",
+  device = "pdf",
+  width = 5, height = 2.6,
+  path = "fig/"
+)
+```
+
+
+### Similarity (Different Co-locationships)
+
+```{r similarity_vs3, echo=FALSE}
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H vs CB-1D"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1H-MFN"]<-"SW-24H vs CB-1H"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs CB-1H-MFN"]<-"CB-1D vs CB-1H"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H vs Social relationship"
+
+df_vip_sim <- subset(df_vip_sim, Compare %in% c("SW-24H vs CB-1D",
+                                                "SW-24H vs CB-1H",
+                                                "CB-1D vs CB-1H") 
+                     )
+df_vip_sim$Compare<- as.factor(df_vip_sim$Compare)
+
+ggplot(df_vip_sim, aes(x=Compare, y=Jaccard,
+                      # shape=category,
+                      fill=Compare
+                      # color=Compare,
+                      )) +
+  geom_boxplot() +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(vjust = 1, hjust=0.5),
+    legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2 +
+  facet_wrap(~dataset, nrow = 3,
+             strip.position = 'right',
+             scales = "free_y") +
+  labs(x='', y='Jaccard Similarity')
+
+ggsave(
+  filename = "VIP_similarity_user_MeetupNp3.pdf",
+  device = "pdf",
+  width = 6.5, height = 4.5,
+  path = "fig/"
+)
+```
+
+## Distinct Location ratio
+
+This section is used to generate all plotf about ODLR and CODLR.
+
+```{r Extract_ODLR_COLDR, echo=FALSE}
+vip_LR <- read.csv('final/MeetupNp_Rank/150_all_LR_MeetupNp.csv',
+                   stringsAsFactors = FALSE)
+vip_LR$dataset[vip_LR$dataset=="Weeplace"]<-"Weeplaces"
+vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"CB-1H-CN"
+vip_LR$category[vip_LR$category=="CB-1D-MFN"]<-"CB-1D-CN"
+vip_LR$category[vip_LR$category=="SW-24H-MFN"]<-"SW-24H-CN"
+vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
+
+vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
+                    stringsAsFactors = FALSE)
+
+vip_CLR$dataset[vip_CLR$dataset=="Weeplace"]<-"Weeplaces"
+vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"CB-1H-CN"
+vip_CLR$category[vip_CLR$category=="CB-1D-MFN"]<-"CB-1D-CN"
+vip_CLR$category[vip_CLR$category=="SW-24H-MFN"]<-"SW-24H-CN"
+vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
+```
+
+
+### ODLR and COLDR (Co-locationship vs Social relationship)
+
+```{r ODLR, echo=FALSE}
+
+vip_LR_CN_SN <- vip_LR %>% filter((LR == "USLR") & 
+                                    (category %in% c("CB-1H-CN", 
+                                                     'Social relationship')))
+
+vip_LR_CN_SN$included <- as.factor(vip_LR_CN_SN$included)
+vip_LR_CN_SN$category<- as.factor(vip_LR_CN_SN$category)
+
+ODLR1 <- ggplot(vip_LR_CN_SN, aes(x=included, y=mean, 
+                            # shape=category,
+                            color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") +  
+  labs(x = "Alter's Rank", 
+       y = unname(TeX(c("$\\eta_{ego}(alter)")))
+  )
+print(ODLR1)
+
+# CODLR
+vip_CLR_CN_SN <- vip_CLR %>% filter((LR == "USLR") & 
+                                    (category %in% c("CB-1H-CN", 
+                                                     'Social relationship')))
+vip_CLR_CN_SN$included <- as.factor(vip_CLR_CN_SN$included)
+vip_CLR_CN_SN$category<- as.factor(vip_CLR_CN_SN$category)
+
+CODLR1 <- ggplot(vip_CLR_CN_SN, aes(x=included, y=mean, 
+                              # shape=category,
+                              color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\eta_{ego}(alters)")))
+  )
+
+print(CODLR1)
+
+# Combine them into one plot
+ggarrange(
+  ODLR1, CODLR1, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "VIP_CCP_VS_ODLR_CODLR_MeetupNp.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"
+)
+
+```
+
+### ODLR and COLDR (Different Co-locationship)
+
+```{r CODLR, echo=FALSE}
+vip_LR_CNs <- vip_LR %>% filter((LR == "USLR") & 
+                                  (category!="Social relationship"))
+vip_LR_CNs$category %<>% factor(levels= c("CB-1H-CN",
+                                      "CB-1D-CN","SW-24H-CN"))
+vip_LR_CNs $included <- as.factor(vip_LR_CNs$included)
+vip_LR_CNs $category<- as.factor(vip_LR_CNs$category)
+
+ODLR_all <- ggplot(vip_LR_CNs, aes(x=included, y=mean, 
+                      # shape=category,
+                      color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") +  
+  labs(x = "Alter's Rank", 
+       y = unname(TeX(c("$\\eta_{ego}(alter)")))
+  )
+print(ODLR_all)
+
+# ggsave(
+#   filename = "VIP_LR_MeetupNp_All.pdf",
+#   device = "pdf",
+#   width = 9, height = 3.2,
+#   path = "fig/"
+# )
+
+# CODLR
+
+vip_CLR_CNs <- vip_CLR %>% filter((LR == "USLR") & 
+                                    (category!="Social relationship"))
+vip_CLR_CNs $category %<>% factor(levels= c("CB-1H-CN",
+                                       "CB-1D-CN",
+                                       "SW-24H-CN"))
+vip_CLR_CNs$included <- as.factor(vip_CLR_CNs$included)
+vip_CLR_CNs$category<- as.factor(vip_CLR_CNs$category)
+
+CODLR_all <- ggplot(vip_CLR_CNs, aes(x=included, y=mean, 
+                   # shape=category,
+                   color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\eta_{ego}(alters)")))
+  )
+
+print(CODLR_all)
+
+# ggsave(
+#   filename = "VIP_cumulative_LR_MeetupNp_all.pdf",
+#   device = "pdf",
+#   width = 9, height = 3.2,
+#   path = "fig/"
+# )
+
+# Combine them into one plot (cumulative)
+ggarrange(
+  ODLR_all, CODLR_all, labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+ggsave(
+  filename = "VIP_CCP_VS_ODLR_CODLR_MeetupNp_all.pdf", device = "pdf",
+  width = 9, height = 5,
+  path = "fig/"
+)
+```
+
+## RCCP under Cross-validation
+This section is used to generate plots for Relative cumulative cross-predictability by including randomly-selected alters in qualifiedCB-1H-CN and social relationship network.
+
+```{r RCCP_CV, echo=FALSE}
+
+vip_CV <- read.csv('final/MeetupNp_Rank/150_all_CV_MeetupNp.csv', 
+                   stringsAsFactors = FALSE)
+
+
+vip_CV$dataset[vip_CV$dataset=="Weeplace"]<-"Weeplaces"
+vip_CV$category[vip_CV$category=="Friendship"]<-"Social relationship"
+vip_CV$included <- as.factor(vip_CV$included)
+
+ggplot(vip_CV, aes(x=included, y=mean, 
+                   # shape=category,
+                   color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, 
+             scales = "free_y") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+       )
+
+ggsave(
+  filename = "VIP_CV_MeetupNp.pdf", device = "pdf",
+  width = 9, height = 3.2,
+  path = "fig/"
+)
+
+```
+
+## Regression Analysis
+This section is used to generate plots regression analysis.
+
+
+### Weeplaces, Rank 10 only
+```{r WP_RegressionRank10, echo=FALSE}
+# ONLY WEEPLACE, RANK=10
+df_all <- read.csv("final/MeetupNp_Rank/150_all_MeetupNp_CODLR_CCP.csv",
+                   stringsAsFactors = FALSE)
+df_all$category[df_all$category=="CB-1H-MFN"]<-"Co-locationship"
+df_all$category[df_all$category=="TFN"]<-"Social Relationship"
+Network<- subset(df_all, subset= (Included==10 & 
+                                     category%in%c('Co-locationship', 
+                                                   'Social Relationship') 
+                                   & (dataset=='Weeplace')))
+Network$Included <- as.factor(Network$Included)
+Network$category <- as.factor(Network$category)
+
+ggscatter(Network, x = "USLR", y = "Pi_alters_ratio", color='category',
+          add = "reg.line", conf.int = TRUE,
+          cor.coef = TRUE,
+          cor.coeff.args = list(method = "pearson", label.x.npc = 0.60, label.y.npc = 0.04),
+          xlab = "CODLR",
+          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
+  theme(
+    legend.title = element_blank(),
+    strip.text = element_blank()
+    # legend.position = "right",
+    # strip.text.x = element_text(size = 8),
+    # strip.text.y = element_blank(),
+  )+
+  scale_x_continuous(labels = scales::percent)+
+  facet_wrap(~category,
+             nrow = 1,
+             ncol = 2,
+             scales = 'free_y',
+             # strip.position="right"
+  )
+
+ggsave(
+  filename = "VIP_MeetupNp_CODLR_CCP_Weeplace.pdf", device = "pdf",
+  width = 5, height = 3,
+  path = "fig/"
+)
+```
+
+### Weeplaces, Rank 1--10, social relationship
+```{r WP_RegressionRank1_10_SN, echo=FALSE}
+## focus on weeplace dataset
+SN_H <-subset(df_all, subset= (category=='Social Relationship' & 
+                                  dataset=='Weeplace'))
+SN_H$Included <- as.factor(SN_H$Included)
+
+ggscatter(SN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[2],
+          add = "reg.line", conf.int = TRUE,
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "CODLR",
+          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    # strip.text.x = element_text(size = 8),
+    # strip.text = element_blank(),
+  )+
+  scale_x_continuous(labels = scales::percent)+
+  facet_wrap(~Included,
+             nrow = 3,
+             ncol = 4,
+             scales = 'free_y',
+             # strip.position="right"
+  )
+
+ggsave(
+  filename = "VIP_MeetupNp_CODLR_CCP_wp_TFN.pdf",
+  device = "pdf",
+  width = 9.39, height = 6.24,
+  path = "fig/"
+)
+```
+
+### Weeplaces, Rank 1--10, co-locationship
+```{r WP_RegressionRank1_10_CN, echo=FALSE}
+## focus on weeplace dataset
+CN_H <-  subset(df_all, subset= (category=='Co-locationship' & 
+                                    dataset=='Weeplace'))
+
+CN_H$Included <- as.factor(CN_H$Included)
+
+ggscatter(CN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[1],
+          add = "reg.line", conf.int = TRUE,
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "CODLR",
+          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
+  theme(
+    legend.title = element_blank(),
+    # legend.position = "none",
+    # strip.text.x = element_text(size = 8),
+    # strip.text = element_blank(),
+  )+
+  scale_x_continuous(labels = scales::percent)+
+  facet_wrap(~Included,
+             nrow = 3,
+             ncol = 4,
+             scales = 'free_y',
+             # strip.position="right"
+  )
+
+ggsave(
+  filename = "VIP_MeetupNp_CODLR_CCP_wp_H_MFN.pdf",
+  device = "pdf",
+  width = 9.39, height = 6.24,
+  path = "fig/"
+)
+
+```
