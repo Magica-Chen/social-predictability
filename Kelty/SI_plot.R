@@ -170,3 +170,34 @@ ggsave(
 )
 
 
+## ---------------
+TopJustification <- read.csv('Kelty/Top_Ten_Justification.csv')
+TopJustification <- TopJustification %>% filter((Rank <= 30) )
+
+ggplot(TopJustification, aes(x=Rank, y=Ratio)) + 
+  geom_line(aes(color=NETWORK), size=1.5) + 
+  theme(
+    # panel.grid.major = element_blank(), 
+    # panel.grid.minor = element_blank(),
+    legend.title = element_blank(),
+    legend.position =  c(0.85, 0.8),
+    strip.text = element_text(size = 15),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +
+  labs(x = "Rank", 
+       y = "Average Number of Co-locations"
+  )
+
+ggsave(
+  filename = "average_meetups.pdf", device = "pdf",
+  width = 5.74, height = 3.53,
+  path = "fig/"
+)
