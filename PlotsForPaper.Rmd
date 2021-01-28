@@ -15,10 +15,35 @@ library("reshape2")
 library("latex2exp")
 library("magrittr")
 library("ggpubr")
+library(tikzDevice)
+options(tikzMetricPackages = c("\\usepackage[utf8]{inputenc}",
+    "\\usepackage[T1]{fontenc}", "\\usetikzlibrary{calc}",
+    "\\usepackage{amssymb}"))
 
 theme_set(
   theme_bw() +
-    theme(legend.position = "right")
+    theme(legend.position = "top",
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          strip.background = element_blank(),
+          panel.border = element_rect(colour = "black", fill = NA),
+          legend.title = element_blank(),
+          legend.spacing.x = unit(0.5, "char"),
+          strip.text = element_text(size = 15),
+          legend.text = element_text(
+            face = "bold",
+            size = 12
+          ),
+          axis.text = element_text(
+            face = "bold",
+            size = 12
+          ),
+          axis.title = element_text(
+            face = "bold",
+            size = 12
+          ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+          )
 )
 
 colors_10 <- c(
@@ -65,132 +90,132 @@ df_predictability_melt <- melt(df_predictability,
 ### Focus on LZ entropy and datasets only
 
 ```{r LZ_entropy_Pi, echo=FALSE}
-df_together <- df %>% select(userid, LZ.Entropy, LZ.Pi, dataset)
+# df_together <- df %>% select(userid, LZ.Entropy, LZ.Pi, dataset)
+# 
+# df_together = rename(df_together, 
+#                      'Entropy (bit)' = 'LZ.Entropy', 
+#                      'Predictability' = 'LZ.Pi'
+#                      )
+# df_together_melt <- melt(df_together,
+#                          id.vars = c("userid", "dataset")
+# )
 
-df_together = rename(df_together, 
-                     'Entropy (bit)' = 'LZ.Entropy', 
-                     'Predictability' = 'LZ.Pi'
-                     )
-df_together_melt <- melt(df_together,
-                         id.vars = c("userid", "dataset")
-)
 
-ggplot(df_together_melt, aes(x = value)) +
+p_ent <- ggplot(df_entropy, aes(x = LZ.Entropy)) +
   geom_histogram(aes(fill = dataset),
                  alpha = 0.7, position = "identity", bins = 100
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.spacing.x = unit(0.5, "char"),
-    strip.text = element_text(size = 15),
-    legend.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.title = element_text(
-      face = "bold",
-      size = 12
-    ),
-    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +
   scale_fill_manual(
     values = colors_10[1:3]
   ) +
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
-  facet_wrap(~variable, scales = "free") + 
-  labs(x = " ")
+  labs(x = unname(TeX(c("Entropy  $\\hat{S}_A$ (bits)"))))
 
-ggsave(
-  filename = "LZ_entropy_Pi_dataset.pdf", device = "pdf",
-  width = 9.90, height = 2.96,
-  path = "fig/"
-)
-```
-
-### Entropy histgram (Shanno vs LZ)
-
-```{r Hist_entropy, echo=FALSE}
-ggplot(df_entropy_melt, aes(x = value)) +
-  geom_histogram(aes(fill = variable),
-    alpha = 0.8, position = "identity", bins = 100
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.spacing.x = unit(0.5, "char"),
-    strip.text = element_text(size = 15),
-    legend.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.title = element_text(
-      face = "bold",
-      size = 12
-    ),
-    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+p_pred <- ggplot(df_predictability, aes(x = LZ.Pi)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.7, position = "identity", bins = 100
   ) +
   scale_fill_manual(
-    labels = unname(TeX(c("$S_{SN}", "$S_{LZ}"))),
-    values = colors_10[1:2]
+    values = colors_10[1:3]
   ) +
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
-  facet_wrap(~dataset) +
-  labs(x = "Entropy (bit)")
+  labs(x = unname(TeX(c("Predictability $\\Pi_{A}$"))))
 
-ggsave(
-  filename = "hist_entropy.pdf", device = "pdf",
-  width = 9.90, height = 2.66,
-  path = "fig/"
+
+ggarrange(
+  p_ent, p_pred, labels = c("A", "B"), nrow = 1, ncol = 2,
+  common.legend = TRUE, legend = "top"
 )
+
+
+# ggsave(
+#   filename = "LZ_entropy_Pi_dataset.pdf", device = "pdf",
+#   width = 9.90, height = 2.96,
+#   path = "fig/"
+# )
 
 ```
 
-### Predictability histgram (Shanno vs LZ)
+<!-- ### Entropy histgram (Shanno vs LZ) -->
 
-```{r Hist_predictabiliy, echo=FALSE}
-ggplot(df_predictability_melt, aes(x = value)) +
-  geom_histogram(aes(fill = variable),
-    alpha = 0.8, position = "identity", bins = 100
-  ) +
-  theme(
-    legend.title = element_blank(),
-    legend.spacing.x = unit(0.5, "char"),
-    strip.text = element_text(size = 15),
-    legend.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.text = element_text(
-      face = "bold",
-      size = 12
-    ),
-    axis.title = element_text(
-      face = "bold",
-      size = 12
-    ),
-    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-  ) +
-  scale_fill_manual(
-    labels = unname(TeX(c("$\\Pi_{SN}", "$\\Pi_{LZ}"))),
-    values = colors_10[3:4]
-  ) +
-  facet_wrap(~dataset) +
-  labs(x = "Predictability")
+<!-- ```{r Hist_entropy, echo=FALSE} -->
+<!-- ggplot(df_entropy_melt, aes(x = value)) + -->
+<!--   geom_histogram(aes(fill = variable), -->
+<!--     alpha = 0.8, position = "identity", bins = 100 -->
+<!--   ) + -->
+<!--   theme( -->
+<!--     legend.title = element_blank(), -->
+<!--     legend.spacing.x = unit(0.5, "char"), -->
+<!--     strip.text = element_text(size = 15), -->
+<!--     legend.text = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     axis.text = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     axis.title = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     # plot.title=element_text(face='bold', size=12,hjust = 0.5) -->
+<!--   ) + -->
+<!--   scale_fill_manual( -->
+<!--     labels = unname(TeX(c("$S_{SN}", "$S_{LZ}"))), -->
+<!--     values = colors_10[1:2] -->
+<!--   ) + -->
+<!--   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) + -->
+<!--   facet_wrap(~dataset) + -->
+<!--   labs(x = "Entropy (bit)") -->
 
-ggsave(
-  filename = "hist_predictability.pdf", device = "pdf",
-  width = 9.90, height = 2.66,
-  path = "fig/"
-)
+<!-- ggsave( -->
+<!--   filename = "hist_entropy.pdf", device = "pdf", -->
+<!--   width = 9.90, height = 2.66, -->
+<!--   path = "fig/" -->
+<!-- ) -->
 
-```
+<!-- ``` -->
+
+<!-- ### Predictability histgram (Shanno vs LZ) -->
+
+<!-- ```{r Hist_predictabiliy, echo=FALSE} -->
+<!-- ggplot(df_predictability_melt, aes(x = value)) + -->
+<!--   geom_histogram(aes(fill = variable), -->
+<!--     alpha = 0.8, position = "identity", bins = 100 -->
+<!--   ) + -->
+<!--   theme( -->
+<!--     legend.title = element_blank(), -->
+<!--     legend.spacing.x = unit(0.5, "char"), -->
+<!--     strip.text = element_text(size = 15), -->
+<!--     legend.text = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     axis.text = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     axis.title = element_text( -->
+<!--       face = "bold", -->
+<!--       size = 12 -->
+<!--     ), -->
+<!--     # plot.title=element_text(face='bold', size=12,hjust = 0.5) -->
+<!--   ) + -->
+<!--   scale_fill_manual( -->
+<!--     labels = unname(TeX(c("$\\Pi_{SN}", "$\\Pi_{LZ}"))), -->
+<!--     values = colors_10[3:4] -->
+<!--   ) + -->
+<!--   facet_wrap(~dataset) + -->
+<!--   labs(x = "Predictability") -->
+
+<!-- ggsave( -->
+<!--   filename = "hist_predictability.pdf", device = "pdf", -->
+<!--   width = 9.90, height = 2.66, -->
+<!--   path = "fig/" -->
+<!-- ) -->
+
+<!-- ``` -->
 
 
 ## Cross-entropy
@@ -199,10 +224,15 @@ This section is used to present all plots related to pairwise cross-entropy.
 
 ```{r Extract_CE_results, echo=FALSE}
 ## For 1-H Colocationship
+# with quality control
 wp_CE <- read.csv("temp_data/wp-150/wp-150-H/wp_CE_over1.csv")
 bk_CE <- read.csv("temp_data/bk-150/bk-150-H/bk_CE_over1.csv")
 gw_CE <- read.csv("temp_data/gws-150/gws-150-H/gws_CE_over1.csv")
 
+# # # without quality control
+# wp_CE <- read.csv("temp_data/wp-150/wp-150-H/wp_CE.csv")
+# bk_CE <- read.csv("temp_data/bk-150/bk-150-H/bk_CE.csv")
+# gw_CE <- read.csv("temp_data/gws-150/gws-150-H/gws_CE.csv")
 
 wp_CE <- wp_CE[!is.na(wp_CE$CE_alter), ]
 bk_CE <- bk_CE[!is.na(bk_CE$CE_alter), ]
@@ -218,6 +248,17 @@ df_CE <- rbindlist(list(wp_CE, bk_CE, gw_CE))
 df_CE <- within(df_CE, group[N_previous<150] <- 'useless')
 df_CE$group %<>% factor(levels= c("useless","useful"))
 
+df_CE_Rank1 <- df_CE %>% filter(group=='useful') %>% 
+  group_by(userid_x, dataset) %>% 
+  filter(row_number()==1)
+
+df_CE_Rank5 <- df_CE %>% filter(group=='useful') %>% 
+  group_by(userid_x, dataset) %>% 
+  filter(row_number()==5)
+
+df_CE_Rank10 <- df_CE %>% 
+  group_by(userid_x, dataset) %>% filter(group=='useful') %>% 
+  filter(row_number()==10)
 ## For Social Relationship
 wp_true_CE <- read.csv("temp_data/wp-150/wp-true_CE.csv")
 bk_true_CE <- read.csv("temp_data/bk-150/bk-true_CE.csv")
@@ -237,6 +278,241 @@ df_true_CE <- rbindlist(list(wp_true_CE, bk_true_CE, gw_true_CE))
 # add a N_previous requirement M_previous >=150
 df_true_CE <- within(df_true_CE, group[N_previous<150] <- 'useless')
 df_true_CE$group %<>% factor(levels= c("useless","useful"))
+
+df_true_CE_Rank1 <- df_true_CE %>% filter(group=='useful') %>% 
+  group_by(userid_x, dataset) %>% 
+  filter(row_number()==1)
+
+df_true_CE_Rank5 <- df_true_CE %>% filter(group=='useful') %>% 
+  group_by(userid_x, dataset) %>% 
+  filter(row_number()==5)
+
+df_true_CE_Rank10 <- df_true_CE %>% filter(group=='useful') %>% 
+  group_by(userid_x, dataset) %>% 
+  filter(row_number()==10)
+```
+
+### All CE for both networks with useful rank-1 alter
+
+
+```{r CE_Both_rank1, echo=FALSE}
+p_CE_rank1 <- ggplot(df_CE_Rank1, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 100
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+
+p_true_CE_rank1 <- ggplot(df_true_CE_Rank1, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 100
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+
+ggarrange(
+  p_ent, p_pred, p_CE_rank1, p_true_CE_rank1,
+  labels = c("A", "B", "C", "D"), nrow = 2, ncol = 2,
+  common.legend = TRUE, legend = "top"
+)
+
+
+ggsave(
+  filename = "Histogram_entropy_Pi_dataset.pdf", device = "pdf",
+  width = 8.00, height =6.00,
+  path = "fig/"
+)
+```
+
+### All CE for both networks with useful rank-5 and rank-10 alters
+
+```{r CE_Both_rank5_10, echo=FALSE}
+p_CE_rank5 <- ggplot(df_CE_Rank5, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 70
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+
+p_true_CE_rank5 <- ggplot(df_true_CE_Rank5, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 70
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+p_CE_rank10 <- ggplot(df_CE_Rank10, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 50
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+
+p_true_CE_rank10 <- ggplot(df_true_CE_Rank10, aes(x = CE_alter)) +
+  geom_histogram(aes(fill = dataset),
+                 alpha = 0.6, position = "identity", bins = 50
+  ) +
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  scale_fill_manual(
+    values = colors_10[1:3]
+  ) +
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+
+ggarrange(
+  p_CE_rank5, p_true_CE_rank5, p_CE_rank10, p_true_CE_rank10,
+  labels = c("A", "B", "C", "D"), nrow = 2, ncol = 2,
+  common.legend = TRUE, legend = "top"
+)
+
+
+ggsave(
+  filename = "Histogram_CE_5_10.pdf", device = "pdf",
+  width = 8.00, height =6.00,
+  path = "fig/"
+)
+```
+
+
+
+### All CP and RCP with useful rank-1 alter
+
+```{r CP_Both_rank1, echo=FALSE}
+df_CE_Rank1$category <- 'Co-locationship'
+df_CE_Rank1$meetup <- NULL
+df_true_CE_Rank1$category <- 'Social relationship'
+df_Rank1 <- rbindlist(list(df_CE_Rank1, df_true_CE_Rank1))
+df_Rank1$category <- as.factor(df_Rank1$category)
+df_Rank1$Pi_alter_rate <- df_Rank1$Pi_alter / df_Rank1$Pi
+df_Rank1 <- df_Rank1[df_Rank1$Pi_alter_rate < 2, ]
+
+# # count how much points 
+# df_Rank1[df_Rank1$Pi_alter_rate >= 2, ] %>% count(category)
+
+p_CP_rank1_bk <- ggplot(df_Rank1[df_Rank1$dataset=='BrightKite',], aes(x = Pi_alter)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Cross-predictability $\\Pi_{A|B}"))))
+
+p_CP_rank1_gw <- ggplot(df_Rank1[df_Rank1$dataset=='Gowalla',], aes(x = Pi_alter)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Cross-predictability $\\Pi_{A|B}"))))
+
+p_CP_rank1_wp <- ggplot(df_Rank1[df_Rank1$dataset=='Weeplaces',], aes(x = Pi_alter)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Cross-predictability $\\Pi_{A|B}"))))
+
+
+p_RCP_rank1_bk <- ggplot(df_Rank1[df_Rank1$dataset=='BrightKite',], aes(x = Pi_alter_rate)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Relative cross-predictability $\\Phi_{A|B}"))))
+
+p_RCP_rank1_gw <- ggplot(df_Rank1[df_Rank1$dataset=='Gowalla',], aes(x = Pi_alter_rate)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Relative cross-predictability $\\Phi_{A|B}"))))
+
+p_RCP_rank1_wp <- ggplot(df_Rank1[df_Rank1$dataset=='Weeplaces',], aes(x = Pi_alter_rate)) +
+  geom_density(aes(fill = category, color=category),
+               alpha = 0.6, position = "identity"
+  ) +
+  scale_colour_manual(
+    values = colors_10[1:2]
+  ) + 
+  scale_fill_manual(
+    values = colors_10[1:2]
+  ) +
+  labs(x = unname(TeX(c("Relative cross-predictability $\\Phi_{A|B}"))))
+
+
+
+ggarrange(
+  p_CP_rank1_bk, p_CP_rank1_gw, p_CP_rank1_wp,
+  p_RCP_rank1_bk, p_RCP_rank1_gw, p_RCP_rank1_wp,
+  labels = c("A", "B", "C", "D", "E", "F"), nrow = 2, ncol = 3,
+  common.legend = TRUE, legend = "top"
+)
+
+
+ggsave(
+  filename = "Density_CP_RCP_Rank1.pdf", device = "pdf",
+  width = 9.66, height =6.00,
+  path = "fig/"
+)
 ```
 
 ### CE for co-locationship
@@ -496,10 +772,10 @@ ggsave(
 This section is used to generate all plots for CCP, CCE.
 
 ```{r Final_data_extract, echo=FALSE}
-theme_set(
-  theme_bw() +
-    theme(legend.position = "top")
-)
+# theme_set(
+#   theme_bw() +
+#     theme(legend.position = "top")
+# )
 
 all_final <- read.csv('final/MeetupNp_Rank/150_all_category_MeetupNp.csv', 
                       stringsAsFactors = FALSE)
@@ -515,6 +791,7 @@ all_final$category[all_final$category=="TFN"]<-"Social relationship"
 ```{r CCP_CN_vs_SN, echo=FALSE}
 all_final_CN_SN <- subset(all_final, category %in% c("CB-1H-CN",
                                                 "Social relationship"))
+all_final_CN_SN$category[all_final_CN_SN$category=="CB-1H-CN"]<-"Co-locationship"
                                                 
 all_final_CN_SN $category<- as.factor(all_final_CN_SN $category)
 all_final_CN_SN $included <- as.factor(all_final_CN_SN $included)
@@ -524,6 +801,7 @@ Pi_alters <- ggplot(all_final_CN_SN , aes(x=included, y=mean,
                       color=category)) + 
   geom_point(size=3) +
   theme(
+    legend.position = "top",
     legend.title = element_blank(),
     # legend.position = "none",
     strip.text = element_text(size = 15),
@@ -546,7 +824,7 @@ Pi_alters <- ggplot(all_final_CN_SN , aes(x=included, y=mean,
                 position=position_dodge(0.05)) + 
   facet_wrap(~dataset, scales = "free") + 
   labs(x = "Included number of alters", 
-       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+       y = unname(TeX(c("$\\Phi_{ego|alters}")))
   )
 
 print(Pi_alters)
@@ -600,7 +878,7 @@ Pi_alters <- ggplot(all_final_CNs, aes(x=included, y=mean,
                 position=position_dodge(0.05)) + 
   facet_wrap(~dataset, scales = "free") + 
   labs(x = "Included number of alters", 
-       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+       y = unname(TeX(c("$\\Phi_{ego|alters}$")))
   )
 
 print(Pi_alters)
@@ -781,6 +1059,8 @@ vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
 vip_LR_CN_SN <- vip_LR %>% filter((LR == "USLR") & 
                                     (category %in% c("CB-1H-CN", 
                                                      'Social relationship')))
+vip_LR_CN_SN$category[vip_LR_CN_SN$category=="CB-1H-CN"]<-"Co-locationship"
+
 
 vip_LR_CN_SN$included <- as.factor(vip_LR_CN_SN$included)
 vip_LR_CN_SN$category<- as.factor(vip_LR_CN_SN$category)
@@ -992,6 +1272,7 @@ vip_CV <- read.csv('final/MeetupNp_Rank/150_all_CV_MeetupNp.csv',
 
 vip_CV$dataset[vip_CV$dataset=="Weeplace"]<-"Weeplaces"
 vip_CV$category[vip_CV$category=="Friendship"]<-"Social relationship"
+vip_CV$category[vip_CV$category=="CB-1H-CN"]<-"Co-locationship"
 vip_CV$included <- as.factor(vip_CV$included)
 
 ggplot(vip_CV, aes(x=included, y=mean, 
@@ -1022,7 +1303,7 @@ ggplot(vip_CV, aes(x=included, y=mean,
   facet_wrap(~dataset, 
              scales = "free_y") + 
   labs(x = "Included number of alters", 
-       y = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))
+       y = unname(TeX(c("$\\Phi_{ego|alters}")))
        )
 
 ggsave(
@@ -1055,8 +1336,8 @@ ggscatter(Network, x = "USLR", y = "Pi_alters_ratio", color='category',
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE,
           cor.coeff.args = list(method = "pearson", label.x.npc = 0.60, label.y.npc = 0.04),
-          xlab = "CODLR",
-          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
+          xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
+          ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
   theme(
     legend.title = element_blank(),
     strip.text = element_blank()
@@ -1089,10 +1370,11 @@ SN_H$Included <- as.factor(SN_H$Included)
 ggscatter(SN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[2],
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE, cor.method = "pearson",
-          xlab = "CODLR",
-          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
-  theme(
-    legend.title = element_blank(),
+          xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
+          ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
+  theme(strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.title = element_blank(),
     # legend.position = "none",
     # strip.text.x = element_text(size = 8),
     # strip.text = element_blank(),
@@ -1124,10 +1406,11 @@ CN_H$Included <- as.factor(CN_H$Included)
 ggscatter(CN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[1],
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE, cor.method = "pearson",
-          xlab = "CODLR",
-          ylab = unname(TeX(c("$\\Pi_{alters}/ \\Pi_{ego}")))) +
-  theme(
-    legend.title = element_blank(),
+          xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
+          ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
+  theme(strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA),
+        legend.title = element_blank(),
     # legend.position = "none",
     # strip.text.x = element_text(size = 8),
     # strip.text = element_blank(),

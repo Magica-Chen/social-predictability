@@ -32,7 +32,13 @@ levels(CE_cut$WithCF) <- c("Before", "After")
 
 p1 <- ggplot(CE_cut, aes(x=RatioCutOff, y=CE, color=userid)) + 
   geom_line() + 
+  theme_bw() +
   theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA),
+    legend.spacing.x = unit(0.5, "char"),
     legend.title = element_blank(),
     legend.position = "none",
     strip.text = element_text(size = 15),
@@ -64,8 +70,13 @@ ROC_melt <- melt(ROC,
 
 p2 <- ggplot(ROC_melt, aes(x=value)) + 
   geom_histogram(alpha = 0.7, position = "identity", binwidth = 0.01) + 
+  theme_bw() +
   theme(
-    legend.title = element_blank(),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA),
+    legend.spacing.x = unit(0.5, "char"),
     legend.position = "none",
     strip.text = element_text(size = 15),
     axis.text = element_text(
@@ -91,8 +102,14 @@ names(RatioStandard) <- c('Category', 'userid', 'CE')
 
 q1 <- ggplot(RatioStandard, aes(x=CE)) + 
   geom_density(aes(fill = Category, color = Category),
-                 alpha = 0.8, position = "identity") + 
+                 alpha = 0.8, position = "identity") +
+  theme_bw() +
   theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA),
+    legend.spacing.x = unit(0.5, "char"),
     legend.title = element_blank(),
     legend.position =  c(0.9, 0.9),
     axis.text = element_text(
@@ -142,8 +159,10 @@ LZ_cut <- LZ_cut%>% filter((entropy >= 0) & (userid %in% userlist) )
 
 
 g1 <- ggplot(LZ_cut, aes(x=CutOff, y=entropy, color=userid)) + 
-  geom_line() + 
+  geom_line() +   theme_bw() +
   theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
     legend.title = element_blank(),
     legend.position = "none",
     strip.text = element_text(size = 15),
@@ -159,7 +178,7 @@ g1 <- ggplot(LZ_cut, aes(x=CutOff, y=entropy, color=userid)) +
   ) + 
   scale_x_continuous(labels = scales::percent) + 
   labs(x = "Cutoff percentage of ego's text", 
-       y = "entropy (bit) at cutoff"
+       y = "Entropy (bit) at cutoff"
   )
 print(g1)
 
@@ -175,10 +194,10 @@ TopJustification <- read.csv('Kelty/Top_Ten_Justification.csv')
 TopJustification <- TopJustification %>% filter((Rank <= 30) )
 
 ggplot(TopJustification, aes(x=Rank, y=Ratio)) + 
-  geom_line(aes(color=NETWORK), size=1.5) + 
+  geom_line(aes(color=NETWORK), size=1.5) + theme_bw() +
   theme(
-    # panel.grid.major = element_blank(), 
-    # panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     legend.title = element_blank(),
     legend.position =  c(0.85, 0.8),
     strip.text = element_text(size = 15),
