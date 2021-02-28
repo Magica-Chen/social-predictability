@@ -259,7 +259,7 @@ df_CE_Rank5 <- df_CE %>% filter(group=='useful') %>%
 df_CE_Rank10 <- df_CE %>% 
   group_by(userid_x, dataset) %>% filter(group=='useful') %>% 
   filter(row_number()==10)
-## For Social Relationship
+## For Social Network
 wp_true_CE <- read.csv("temp_data/wp-150/wp-true_CE.csv")
 bk_true_CE <- read.csv("temp_data/bk-150/bk-true_CE.csv")
 gw_true_CE <- read.csv("temp_data/gws-150/gws-true_CE.csv")
@@ -339,17 +339,17 @@ p_true_CE_rank1 <- ggplot(df_true_CE_Rank1, aes(x = CE_alter)) +
 
 
 ggarrange(
-  p_ent, p_pred, p_CE_rank1, p_true_CE_rank1,
+  p_ent, p_pred, p_true_CE_rank1, p_CE_rank1, 
   labels = c("A", "B", "C", "D"), nrow = 2, ncol = 2,
   common.legend = TRUE, legend = "top"
 )
 
 
-# ggsave(
-#   filename = "Histogram_entropy_Pi_dataset.pdf", device = "pdf",
-#   width = 8.00, height =6.00,
-#   path = "fig/"
-# )
+ggsave(
+  filename = "Histogram_entropy_Pi_dataset.pdf", device = "pdf",
+  width = 8.00, height =6.00,
+  path = "fig/"
+)
 ```
 
 ### All CE for both networks with useful rank-5 and rank-10 alters
@@ -441,9 +441,9 @@ ggsave(
 ### All CP and RCP with useful rank-1 alter
 
 ```{r CP_Both_rank1, echo=FALSE}
-df_CE_Rank1$category <- 'Co-locationship'
+df_CE_Rank1$category <- 'Co-location Network'
 df_CE_Rank1$meetup <- NULL
-df_true_CE_Rank1$category <- 'Social relationship'
+df_true_CE_Rank1$category <- 'Social Network'
 df_Rank1 <- rbindlist(list(df_CE_Rank1, df_true_CE_Rank1))
 df_Rank1$category <- as.factor(df_Rank1$category)
 df_Rank1$Pi_alter_rate <- df_Rank1$Pi_alter / df_Rank1$Pi
@@ -542,7 +542,7 @@ ggsave(
 )
 ```
 
-### CE for co-locationship
+### CE for Co-location Network
 
 ```{r CE_CN, echo=FALSE}
 f1 <- ggplot(df_CE, aes(x = CE_alter)) +
@@ -584,7 +584,7 @@ ggsave(
 )
 ```
 
-### CE for social relationship
+### CE for Social Network
 
 ```{r CE_True, echo=FALSE}
 f2 <- ggplot(df_true_CE, aes(x = CE_alter)) +
@@ -627,7 +627,7 @@ ggsave(
 
 ```
 
-### Combine CE for co-locationship and social relationship
+### Combine CE for Co-location Network and Social Network
 ```{r CE_combine, echo=FALSE}
 # put p and q together
 ggarrange(
@@ -649,9 +649,9 @@ ggsave(
 df_CE_useful <- df_CE[df_CE$group == "useful", ]
 df_true_CE_useful <- df_true_CE[df_true_CE$group == "useful", ]
 
-df_CE_useful$category <- 'Co-locationship'
+df_CE_useful$category <- 'Co-location Network'
 df_CE_useful$meetup <- NULL
-df_true_CE_useful$category <- 'Social relationship'
+df_true_CE_useful$category <- 'Social Network'
 df_useful <- rbindlist(list(df_CE_useful, df_true_CE_useful))
 ```
 
@@ -811,14 +811,14 @@ all_final$dataset[all_final$dataset=="Weeplace"]<-"Weeplaces"
 all_final$category[all_final$category=="CB-1H-MFN"]<-"CB-1H-CN"
 all_final$category[all_final$category=="CB-1D-MFN"]<-"CB-1D-CN"
 all_final$category[all_final$category=="SW-24H-MFN"]<-"SW-24H-CN"
-all_final$category[all_final$category=="TFN"]<-"Social relationship"
+all_final$category[all_final$category=="TFN"]<-"Social Network"
 ```
-### RCCP Co-locationship vs Social relationship
+### RCCP Co-location Network vs Social Network
 
 ```{r CCP_CN_vs_SN, echo=FALSE}
 all_final_CN_SN <- subset(all_final, category %in% c("CB-1H-CN",
-                                                "Social relationship"))
-all_final_CN_SN$category[all_final_CN_SN$category=="CB-1H-CN"]<-"Co-locationship"
+                                                "Social Network"))
+all_final_CN_SN$category[all_final_CN_SN$category=="CB-1H-CN"]<-"Co-location Network"
                                                 
 all_final_CN_SN $category<- as.factor(all_final_CN_SN $category)
 all_final_CN_SN $included <- as.factor(all_final_CN_SN $included)
@@ -865,7 +865,7 @@ ggsave(
 
 ```
 
-### RCCP different Co-locationships
+### RCCP different Co-location Networks
 
 ```{r CCP_CNs, echo=FALSE}
 all_final_CNs <- subset(all_final, category %in% c("CB-1H-CN",
@@ -939,7 +939,7 @@ gw_vip_sim$dataset <- 'Gowalla'
 df_vip_sim <- do.call("rbind", list(wp_vip_sim, bk_vip_sim, gw_vip_sim))
 ```
 
-### Similarity (Co-locationship vs social relationship)
+### Similarity (Co-location Network vs Social Network)
 
 ```{r similarity_vs2, echo=FALSE}
 df_vip_sim_2 <- df_vip_sim %>% filter(Compare == "CB-1H-MFN vs TFN")
@@ -1001,15 +1001,15 @@ ggsave(
 ```
 
 
-### Similarity (Different Co-locationships)
+### Similarity (Different Co-location Networks)
 
 ```{r similarity_vs3, echo=FALSE}
 df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1D-MFN"]<-"SW-24H vs CB-1D"
 df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs CB-1H-MFN"]<-"SW-24H vs CB-1H"
-df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="SW-24H-MFN vs TFN"]<-"SW-24H vs Social Network"
 df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs CB-1H-MFN"]<-"CB-1D vs CB-1H"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D vs Social relationship"
-df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H vs Social relationship"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1D-MFN vs TFN"]<-"CB-1D vs Social Network"
+df_vip_sim$Compare[df_vip_sim$Compare=="CB-1H-MFN vs TFN"]<-"CB-1H vs Social Network"
 
 df_vip_sim <- subset(df_vip_sim, Compare %in% c("SW-24H vs CB-1D",
                                                 "SW-24H vs CB-1H",
@@ -1066,7 +1066,7 @@ vip_LR$dataset[vip_LR$dataset=="Weeplace"]<-"Weeplaces"
 vip_LR$category[vip_LR$category=="CB-1H-MFN"]<-"CB-1H-CN"
 vip_LR$category[vip_LR$category=="CB-1D-MFN"]<-"CB-1D-CN"
 vip_LR$category[vip_LR$category=="SW-24H-MFN"]<-"SW-24H-CN"
-vip_LR$category[vip_LR$category=="TFN"]<-"Social relationship"
+vip_LR$category[vip_LR$category=="TFN"]<-"Social Network"
 
 vip_CLR <- read.csv('final/MeetupNp_Rank/150_all_cumulative_LR_MeetupNp.csv', 
                     stringsAsFactors = FALSE)
@@ -1075,18 +1075,18 @@ vip_CLR$dataset[vip_CLR$dataset=="Weeplace"]<-"Weeplaces"
 vip_CLR$category[vip_CLR$category=="CB-1H-MFN"]<-"CB-1H-CN"
 vip_CLR$category[vip_CLR$category=="CB-1D-MFN"]<-"CB-1D-CN"
 vip_CLR$category[vip_CLR$category=="SW-24H-MFN"]<-"SW-24H-CN"
-vip_CLR$category[vip_CLR$category=="TFN"]<-"Social relationship"
+vip_CLR$category[vip_CLR$category=="TFN"]<-"Social Network"
 ```
 
 
-### ODLR and COLDR (Co-locationship vs Social relationship)
+### ODLR and COLDR (Co-location Network vs Social Network)
 
 ```{r ODLR, echo=FALSE}
 
 vip_LR_CN_SN <- vip_LR %>% filter((LR == "USLR") & 
                                     (category %in% c("CB-1H-CN", 
-                                                     'Social relationship')))
-vip_LR_CN_SN$category[vip_LR_CN_SN$category=="CB-1H-CN"]<-"Co-locationship"
+                                                     'Social Network')))
+vip_LR_CN_SN$category[vip_LR_CN_SN$category=="CB-1H-CN"]<-"Co-location Network"
 
 
 vip_LR_CN_SN$included <- as.factor(vip_LR_CN_SN$included)
@@ -1126,7 +1126,7 @@ print(ODLR1)
 # CODLR
 vip_CLR_CN_SN <- vip_CLR %>% filter((LR == "USLR") & 
                                     (category %in% c("CB-1H-CN", 
-                                                     'Social relationship')))
+                                                     'Social Network')))
 vip_CLR_CN_SN$included <- as.factor(vip_CLR_CN_SN$included)
 vip_CLR_CN_SN$category<- as.factor(vip_CLR_CN_SN$category)
 
@@ -1177,11 +1177,11 @@ ggsave(
 
 ```
 
-### ODLR and COLDR (Different Co-locationship)
+### ODLR and COLDR (Different Co-location Network)
 
 ```{r CODLR, echo=FALSE}
 vip_LR_CNs <- vip_LR %>% filter((LR == "USLR") & 
-                                  (category!="Social relationship"))
+                                  (category!="Social Network"))
 vip_LR_CNs$category %<>% factor(levels= c("CB-1H-CN",
                                       "CB-1D-CN","SW-24H-CN"))
 vip_LR_CNs $included <- as.factor(vip_LR_CNs$included)
@@ -1228,7 +1228,7 @@ print(ODLR_all)
 # CODLR
 
 vip_CLR_CNs <- vip_CLR %>% filter((LR == "USLR") & 
-                                    (category!="Social relationship"))
+                                    (category!="Social Network"))
 vip_CLR_CNs $category %<>% factor(levels= c("CB-1H-CN",
                                        "CB-1D-CN",
                                        "SW-24H-CN"))
@@ -1289,7 +1289,7 @@ ggsave(
 ```
 
 ## RCCP under Cross-validation
-This section is used to generate plots for Relative cumulative cross-predictability by including randomly-selected alters in qualifiedCB-1H-CN and social relationship network.
+This section is used to generate plots for Relative cumulative cross-predictability by including randomly-selected alters in qualifiedCB-1H-CN and Social Network network.
 
 ```{r RCCP_CV, echo=FALSE}
 
@@ -1298,8 +1298,8 @@ vip_CV <- read.csv('final/MeetupNp_Rank/150_all_CV_MeetupNp.csv',
 
 
 vip_CV$dataset[vip_CV$dataset=="Weeplace"]<-"Weeplaces"
-vip_CV$category[vip_CV$category=="Friendship"]<-"Social relationship"
-vip_CV$category[vip_CV$category=="CB-1H-CN"]<-"Co-locationship"
+vip_CV$category[vip_CV$category=="Friendship"]<-"Social Network"
+vip_CV$category[vip_CV$category=="CB-1H-CN"]<-"Co-location Network"
 vip_CV$included <- as.factor(vip_CV$included)
 
 ggplot(vip_CV, aes(x=included, y=mean, 
@@ -1350,11 +1350,11 @@ This section is used to generate plots regression analysis.
 # ONLY WEEPLACE, RANK=10
 df_all <- read.csv("final/MeetupNp_Rank/150_all_MeetupNp_CODLR_CCP.csv",
                    stringsAsFactors = FALSE)
-df_all$category[df_all$category=="CB-1H-MFN"]<-"Co-locationship"
-df_all$category[df_all$category=="TFN"]<-"Social Relationship"
+df_all$category[df_all$category=="CB-1H-MFN"]<-"Co-location Network"
+df_all$category[df_all$category=="TFN"]<-"Social Network"
 Network<- subset(df_all, subset= (Included==10 & 
-                                     category%in%c('Co-locationship', 
-                                                   'Social Relationship') 
+                                     category%in%c('Co-location Network', 
+                                                   'Social Network') 
                                    & (dataset=='Weeplace')))
 Network$Included <- as.factor(Network$Included)
 Network$category <- as.factor(Network$category)
@@ -1362,7 +1362,7 @@ Network$category <- as.factor(Network$category)
 ggscatter(Network, x = "USLR", y = "Pi_alters_ratio", color='category',
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE,
-          cor.coeff.args = list(method = "pearson", label.x.npc = 0.60, label.y.npc = 0.04),
+          cor.coeff.args = list(method = "pearson", label.x.npc = 0.2, label.y.npc = 0.04),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
   theme(
@@ -1387,10 +1387,10 @@ ggsave(
 )
 ```
 
-### Weeplaces, Rank 1--10, social relationship
+### Weeplaces, Rank 1--10, Social Network
 ```{r WP_RegressionRank1_10_SN, echo=FALSE}
 ## focus on weeplace dataset
-SN_H <-subset(df_all, subset= (category=='Social Relationship' & 
+SN_H <-subset(df_all, subset= (category=='Social Network' & 
                                   dataset=='Weeplace'))
 SN_H$Included <- as.factor(SN_H$Included)
 
@@ -1422,10 +1422,10 @@ ggsave(
 )
 ```
 
-### Weeplaces, Rank 1--10, co-locationship
+### Weeplaces, Rank 1--10, Co-location Network
 ```{r WP_RegressionRank1_10_CN, echo=FALSE}
 ## focus on weeplace dataset
-CN_H <-  subset(df_all, subset= (category=='Co-locationship' & 
+CN_H <-  subset(df_all, subset= (category=='Co-location Network' & 
                                     dataset=='Weeplace'))
 
 CN_H$Included <- as.factor(CN_H$Included)
