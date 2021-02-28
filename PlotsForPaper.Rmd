@@ -290,6 +290,20 @@ df_true_CE_Rank5 <- df_true_CE %>% filter(group=='useful') %>%
 df_true_CE_Rank10 <- df_true_CE %>% filter(group=='useful') %>% 
   group_by(userid_x, dataset) %>% 
   filter(row_number()==10)
+
+
+signif_CE5 <- df_CE_Rank5 %>% group_by(dataset)%>% 
+  summarise(Mean=mean(CE_alter), Median=median(CE_alter), Std=sd(CE_alter))
+
+signif_CE10 <- df_CE_Rank10 %>% group_by(dataset)%>% 
+  summarise(Mean=mean(CE_alter), Median=median(CE_alter), Std=sd(CE_alter))
+
+signif_true_CE5 <- df_true_CE_Rank5 %>% group_by(dataset)%>% 
+  summarise(Mean=mean(CE_alter), Median=median(CE_alter), Std=sd(CE_alter))
+
+signif_true_CE10 <- df_true_CE_Rank10 %>% group_by(dataset)%>% 
+  summarise(Mean=mean(CE_alter), Median=median(CE_alter), Std=sd(CE_alter))
+
 ```
 
 ### All CE for both networks with useful rank-1 alter
@@ -331,11 +345,11 @@ ggarrange(
 )
 
 
-ggsave(
-  filename = "Histogram_entropy_Pi_dataset.pdf", device = "pdf",
-  width = 8.00, height =6.00,
-  path = "fig/"
-)
+# ggsave(
+#   filename = "Histogram_entropy_Pi_dataset.pdf", device = "pdf",
+#   width = 8.00, height =6.00,
+#   path = "fig/"
+# )
 ```
 
 ### All CE for both networks with useful rank-5 and rank-10 alters
@@ -345,6 +359,8 @@ p_CE_rank5 <- ggplot(df_CE_Rank5, aes(x = CE_alter)) +
   geom_histogram(aes(fill = dataset),
                  alpha = 0.6, position = "identity", bins = 70
   ) +
+  geom_vline(data=signif_CE5, aes(xintercept = Mean, color = dataset),
+             size=1.5) + 
   # geom_density(aes(fill = dataset, color=dataset),
   #              alpha = 0.6, position = "identity"
   # ) +
@@ -352,13 +368,15 @@ p_CE_rank5 <- ggplot(df_CE_Rank5, aes(x = CE_alter)) +
     values = colors_10[1:3]
   ) +
   scale_color_manual(values = colors_10[1:3]) +
-  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
-
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))+
+  xlim(0,10)
 
 p_true_CE_rank5 <- ggplot(df_true_CE_Rank5, aes(x = CE_alter)) +
   geom_histogram(aes(fill = dataset),
                  alpha = 0.6, position = "identity", bins = 70
-  ) +
+  ) + 
+  geom_vline(data=signif_true_CE5, aes(xintercept = Mean, color = dataset),
+             size=1.5) + 
   # geom_density(aes(fill = dataset, color=dataset),
   #              alpha = 0.6, position = "identity"
   # ) +
@@ -366,12 +384,16 @@ p_true_CE_rank5 <- ggplot(df_true_CE_Rank5, aes(x = CE_alter)) +
     values = colors_10[1:3]
   ) +
   scale_color_manual(values = colors_10[1:3]) +
-  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))+
+  xlim(0,10)
+
 
 p_CE_rank10 <- ggplot(df_CE_Rank10, aes(x = CE_alter)) +
   geom_histogram(aes(fill = dataset),
                  alpha = 0.6, position = "identity", bins = 50
   ) +
+  geom_vline(data=signif_CE10, aes(xintercept = Mean, color = dataset),
+             size=1.5) + 
   # geom_density(aes(fill = dataset, color=dataset),
   #              alpha = 0.6, position = "identity"
   # ) +
@@ -379,13 +401,16 @@ p_CE_rank10 <- ggplot(df_CE_Rank10, aes(x = CE_alter)) +
     values = colors_10[1:3]
   ) +
   scale_color_manual(values = colors_10[1:3]) +
-  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))+
+  xlim(0,10)
 
 
 p_true_CE_rank10 <- ggplot(df_true_CE_Rank10, aes(x = CE_alter)) +
   geom_histogram(aes(fill = dataset),
                  alpha = 0.6, position = "identity", bins = 50
   ) +
+  geom_vline(data=signif_true_CE10, aes(xintercept = Mean, color = dataset),
+             size=1.5) + 
   # geom_density(aes(fill = dataset, color=dataset),
   #              alpha = 0.6, position = "identity"
   # ) +
@@ -393,7 +418,9 @@ p_true_CE_rank10 <- ggplot(df_true_CE_Rank10, aes(x = CE_alter)) +
     values = colors_10[1:3]
   ) +
   scale_color_manual(values = colors_10[1:3]) +
-  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))))
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)")))) +
+  xlim(0,10)
+
 
 ggarrange(
   p_CE_rank5, p_true_CE_rank5, p_CE_rank10, p_true_CE_rank10,
