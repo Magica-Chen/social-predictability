@@ -1372,7 +1372,7 @@ ggscatter(Network, x = "USLR", y = "Pi_alters_ratio", color='category',
     # strip.text.x = element_text(size = 8),
     # strip.text.y = element_blank(),
   )+
-  scale_x_continuous(labels = scales::percent)+
+  scale_x_continuous(labels = scales::percent) +  catscale10 + catscale10_2 + 
   facet_wrap(~category,
              nrow = 1,
              ncol = 2,
