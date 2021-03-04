@@ -1380,11 +1380,11 @@ ggscatter(Network, x = "USLR", y = "Pi_alters_ratio", color='category',
              # strip.position="right"
   )
 
-ggsave(
-  filename = "VIP_MeetupNp_CODLR_CCP_Weeplace.pdf", device = "pdf",
-  width = 5, height = 3,
-  path = "fig/"
-)
+# ggsave(
+#   filename = "VIP_MeetupNp_CODLR_CCP_Weeplace.pdf", device = "pdf",
+#   width = 5, height = 3,
+#   path = "fig/"
+# )
 ```
 
 ### Weeplaces, Rank 1--10, Social Network
@@ -1396,7 +1396,8 @@ SN_H$Included <- as.factor(SN_H$Included)
 
 ggscatter(SN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[2],
           add = "reg.line", conf.int = TRUE,
-          cor.coef = TRUE, cor.method = "pearson",
+          cor.coef = TRUE, 
+          cor.coeff.args = list(method = "pearson"),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
   theme(strip.background = element_blank(),
@@ -1432,7 +1433,8 @@ CN_H$Included <- as.factor(CN_H$Included)
 
 ggscatter(CN_H, x = "USLR", y = "Pi_alters_ratio", color = colors_10[1],
           add = "reg.line", conf.int = TRUE,
-          cor.coef = TRUE, cor.method = "pearson",
+          cor.coef = TRUE, 
+          cor.coeff.args = list(method = "pearson"),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Phi_{ego|alters}")))) +
   theme(strip.background = element_blank(),
