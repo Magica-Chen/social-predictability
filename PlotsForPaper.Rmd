@@ -1114,10 +1114,12 @@ ODLR1 <- ggplot(vip_LR_CN_SN, aes(x=included, y=mean,
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
-  facet_wrap(~dataset, 
-             scales = "free_y") +  
+  facet_wrap(~dataset 
+             # ,scales = "free_y"
+             ) +  
   labs(x = "Alter's Rank", 
        y = unname(TeX(c("$\\eta_{ego}(alter)")))
   )
@@ -1155,8 +1157,9 @@ CODLR1 <- ggplot(vip_CLR_CN_SN, aes(x=included, y=mean,
   scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
-  facet_wrap(~dataset, 
-             scales = "free_y") + 
+  facet_wrap(~dataset
+             # ,scales = "free_y"
+             ) + 
   labs(x = "Included number of alters", 
        y = unname(TeX(c("$\\eta_{ego}(alters)")))
   )
@@ -1209,10 +1212,12 @@ ODLR_all <- ggplot(vip_LR_CNs, aes(x=included, y=mean,
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
-  facet_wrap(~dataset, 
-             scales = "free_y") +  
+  facet_wrap(~dataset
+             # , scales = "free_y"
+             ) +  
   labs(x = "Alter's Rank", 
        y = unname(TeX(c("$\\eta_{ego}(alter)")))
   )
@@ -1260,8 +1265,9 @@ CODLR_all <- ggplot(vip_CLR_CNs, aes(x=included, y=mean,
   scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower, ymax=upper), width=.2,
                 position=position_dodge(0.05)) + 
-  facet_wrap(~dataset, 
-             scales = "free_y") + 
+  facet_wrap(~dataset
+             # ,scales = "free_y"
+             ) + 
   labs(x = "Included number of alters", 
        y = unname(TeX(c("$\\eta_{ego}(alters)")))
   )
