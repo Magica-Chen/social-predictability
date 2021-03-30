@@ -1,7 +1,7 @@
 ---
 title: "Using 'Co-locationship' as an Alternative to Social Ties inPredictability of Human Mobility"
 author: "Zexun CHEN"
-date: "13/12/2020"
+date: "29/03/2021"
 output: html_document
 ---
 
@@ -1464,5 +1464,69 @@ ggsave(
   width = 9.39, height = 6.24,
   path = "fig/"
 )
+```
+
+
+#Extra Plots for social network vs non-social co-location network
+
+```{r social_network_non_social, echo=FALSE}
+
+wp_stats <- read.csv("final/extra/wp_stats_non_social_vs_social.csv")
+bk_stats <- read.csv("final/extra/bk_stats_non_social_vs_social.csv")
+gw_stats <- read.csv("final/extra/gw_stats_non_social_vs_social.csv")
+
+
+wp_stats$dataset <- "Weeplaces"
+bk_stats$dataset <- "BrightKite"
+gw_stats$dataset <- "Gowalla"
+
+df_stats <- do.call("rbind", list(wp_stats, bk_stats, gw_stats))
+df_stats$Rank <- as.factor(df_stats$Rank)
+
+
+p_alters <- ggplot(df_stats , aes(x=Rank, y=mean_Pi_alters_ratio, 
+                      # shape=category,
+                      color=category)) + 
+  geom_point(size=3) +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower_Pi_alters_ratio, ymax=upper_Pi_alters_ratio), 
+                width=.2,
+                position=position_dodge(0.05)) + 
+  facet_wrap(~dataset, scales = "free") + 
+  labs(x = "Included number of alters", 
+       y = unname(TeX(c("$\\Phi_{ego|alters}")))
+  )
+
+print(p_alters)
+
+ggsave(
+  filename = "extra_social_vs_non_social.pdf",
+  device = "pdf",
+  width = 9, height = 3.2,
+  path = "fig/"
+)
+
 
 ```
+
+
+
