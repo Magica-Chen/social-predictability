@@ -581,7 +581,7 @@ p_ODLR <- ggplot(df_stats, aes(x=Rank,
   geom_errorbar(aes(ymin=lower_ODLR, ymax=upper_ODLR), 
                 width=.2,
                 position=position_dodge(0.05)) + 
-  labs(x = "Included number of alters", 
+  labs(x = "Rank", 
        y = 'ODLR'
   )
 
