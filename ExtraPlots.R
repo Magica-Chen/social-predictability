@@ -98,7 +98,11 @@ ggarrange(
   common.legend = TRUE, legend = "top"
 )
 
-
+ggsave(
+  filename = "Pi_hist_dataset.pdf", device = "pdf",
+  width = 5.50, height =2.5,
+  path = "fig/"
+)
 
 # # Entropy and Predictability
 # wp <- read.csv("final/wp-150/wp-dataset-basic.csv")
@@ -173,13 +177,16 @@ wp_compare <- do.call("rbind", list(SRN_1, NSCLN_1, NSCLN_3))
 # df_compare$Pi_alters_ratio <- df_compare$Pi_alters / df_compare$Pi
 
 ### ---- CE, CP top 1 non-social, social, top 3 non-social, histogram ------
-
+wp_compare$category <- factor(wp_compare$category, 
+                              levels = c('Top social tie',
+                                         'Top non-social co-locator',
+                                         'Top 3 non-social co-locators'))
 p_CE <- ggplot(wp_compare, 
                 aes(x = CCE_alters)) +
   geom_density(size=2, aes(color=category),show.legend=FALSE)+
   stat_density(aes(colour=category), size=2,
                geom="line",position="identity") +
-  scale_colour_manual(values = c(colors_10[3], colors_10[1], colors_10[2])) +
+  catscale10 + 
   theme(
     legend.position = c(0.3, 0.85),
     panel.grid.major = element_blank(), 
@@ -195,16 +202,18 @@ p_CE <- ggplot(wp_compare,
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     )
         # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) + 
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
-  labs(x = unname(TeX(c("Cross-Entropy  $\\hat{S}_{A|B}$ (bits)"))))
+  # labs(x = unname(TeX(c("Cross-Entropy  $\\hat{S}_{A|B}$ (bits)"))))
+  labs(x = "(Cumulative) Cross-Entropy", 
+       y = "Density")
 print(p_CE)
 
 
@@ -213,7 +222,7 @@ p_CP <- ggplot(wp_compare,
   geom_density(size=2, aes(color=category),,show.legend=FALSE)+
   stat_density(aes(colour=category), size=2,
                geom="line",position="identity") +
-  scale_colour_manual(values = c(colors_10[3], colors_10[1], colors_10[2])) +
+  catscale10 + 
   theme(
     legend.position = c(0.72, 0.85),
     panel.grid.major = element_blank(), 
@@ -229,17 +238,19 @@ p_CP <- ggplot(wp_compare,
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     )
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) + 
   scale_x_continuous(labels = scales::percent) +
   # scale_color_manual(labels=c('A', 'B'), values = colors_10[1:2]) +
-  labs(x = unname(TeX(c("Predictability $\\Pi_{A|B}$"))))
+  # labs(x = unname(TeX(c("Predictability $\\Pi_{A|B}$"))))
+  labs(x = "(Cumulative) Cross-Predictability",
+       y = "Density")
 print(p_CP)
 
 
@@ -267,21 +278,21 @@ p_scatter_pred <- ggplot(wp_top10_alters, aes(x=Pi_alters.x, y=Pi_alters.y)) +
     legend.title = element_blank(),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     )
     ) +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::percent) +
-  labs(x = 'Predictability: Top Social tie', 
-       y='Predictability: Top 3 Non-social co-locators') + 
+  labs(x = 'Cross-Predictability', 
+       y='Cumulative Cross-Predictability') + 
   geom_abline(intercept =0, slope = 1, size=1.2)
 
 print(p_scatter_pred)
@@ -296,19 +307,19 @@ p_scatter_ent <- ggplot(wp_top10_alters, aes(x=CCE_alters.x, y=CCE_alters.y)) +
     legend.title = element_blank(),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     )
   ) +
-  labs(x = 'Cross-Entropy: Top Social tie', 
-       y='Cross-Entropy: Top 3 Non-social co-locators') + 
+  labs(x = 'Cross-Entropy', 
+       y='Cumulative Cross-Entropy') + 
   geom_abline(intercept =0, slope = 1, size=1.2)
 
 print(p_scatter_ent)
@@ -316,6 +327,10 @@ print(p_scatter_ent)
 ### -------CCE vs Rank plot --------------------------
 
 wp_stats <- read.csv("final/extra/wp_stats_non_social_vs_social.csv")
+
+wp_stats$category[wp_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+wp_stats$category[wp_stats$category=="social network"]<-"Social tie(s)"
+
 wp_stats$Rank <- as.factor(wp_stats$Rank)
 
 wp_stats_alters <- wp_stats %>% select(Rank, category, 
@@ -326,7 +341,7 @@ wp_stats_alters <- wp_stats %>% select(Rank, category,
              mean_CCE = mean_CCE_alters, mean_Pi = mean_Pi_alters,
              upper_CCE = upper_CCE_alters, upper_Pi = upper_Pi_alters
              )
-wp_stats_alters$type <- 'alter(s) only'
+wp_stats_alters$type <- 'Alter(s) only'
   
 wp_stats_ego_alters <- wp_stats %>% select(Rank, category, 
                     lower_CCE_ego_alters, mean_CCE_ego_alters, upper_CCE_ego_alters,
@@ -336,11 +351,13 @@ wp_stats_ego_alters <- wp_stats %>% select(Rank, category,
                mean_CCE = mean_CCE_ego_alters, mean_Pi = mean_Pi_ego_alters,
                upper_CCE = upper_CCE_ego_alters, upper_Pi = upper_Pi_ego_alters
                ) 
-wp_stats_ego_alters$type <- 'alter(s) and ego'
+wp_stats_ego_alters$type <- 'Alter(s) and ego'
 
 
 wp_stats_details <- do.call("rbind", list(wp_stats_alters, wp_stats_ego_alters))
-
+wp_stats_details$category <- factor(wp_stats_details$category, 
+                                    level=c('Social tie(s)',
+                                            'Non-social co-locator(s)'))
 
 p_CCE_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_CCE, 
                        shape=type,color=category)) + 
@@ -354,15 +371,15 @@ p_CCE_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_CCE,
     strip.text = element_text(size = 15),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 14
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
@@ -390,15 +407,15 @@ p_Pi_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_Pi,
     strip.text = element_text(size = 15),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 14
     ),
     axis.text = element_text(
       face = "bold",
-      size = 12
+      size = 14
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 14
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
@@ -446,13 +463,13 @@ rank_vs_ratio$N_ties[rank_vs_ratio$N_ties==3]<-"Top 3 Social Ties"
 
 rank_vs_ratio$Rank <- as.factor(rank_vs_ratio$Rank)
 
-p_rank_ratio <- ggplot(rank_vs_ratio, aes(x=Rank, y=mean_equality_ratio, 
-                                          color=dataset)) + 
-  geom_point(size=3) +geom_hline(yintercept = 1,
-                                 size =1) + 
+
+p_rank_ratio1 <- ggplot(rank_vs_ratio %>% filter(Rank==1) , 
+                        aes(x=as.factor(N_ties), y=mean_equality_ratio, fill=dataset)) + 
+  geom_bar(position=position_dodge(), stat="identity", colour='black') +
   theme(
     # legend.box="vertical", legend.margin=margin(),
-    legend.position = c(0.5, 0.9),
+    legend.position = c(0.15, 0.8),
     legend.title = element_blank(),
     # legend.position = "none",
     strip.text = element_text(size = 15),
@@ -469,22 +486,63 @@ p_rank_ratio <- ggplot(rank_vs_ratio, aes(x=Rank, y=mean_equality_ratio,
       size = 10
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-  ) +  catscale10 + 
+  ) +  catscale10_2 + 
   scale_y_continuous(breaks = seq(1, 6, len = 6)) + 
+  geom_errorbar(aes(ymin=lower_equality_ratio, ymax=upper_equality_ratio), 
+                width=.2,
+                position=position_dodge(1)) + 
+  labs(x = " ", 
+       y = 'Predictability ratio'
+  )
+
+print(p_rank_ratio1)
+
+
+p_rank_ratio2 <- ggplot(rank_vs_ratio %>% filter(Rank!=1) , aes(x=Rank, y=mean_equality_ratio, 
+                                          color=dataset)) + 
+  geom_point(size=3) +geom_hline(yintercept = 1,
+                                 size =1) + 
+  theme(
+    # legend.box="vertical", legend.margin=margin(),
+    legend.position = c(0.5, 0.9),
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 12),
+    legend.text = element_text(
+      face = "bold",
+      size = 10
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 10
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(breaks = seq(1, 3, len = 6)) + 
   facet_wrap(~N_ties, scales = 'free_y') + 
   geom_errorbar(aes(ymin=lower_equality_ratio, ymax=upper_equality_ratio), 
                 width=.2,
                 position=position_dodge(0.05)) + 
   labs(x = "The number of non-social co-locators included", 
-       y = 'Predictability Ratio: social tie(s) / non-social co-locator(s)'
+       y = 'Predictability ratio'
   )
 
-print(p_rank_ratio)
+print(p_rank_ratio2)
+
+ggarrange(
+  p_rank_ratio1, p_rank_ratio2,
+  labels = c("A", "B"), nrow = 2, ncol = 1, common.legend = TRUE, legend = "top"
+)
+
 
 ggsave(
   filename = "combined_ratio_compare.pdf", 
   device = "pdf",
-  width = 8, height = 6,
+  width = 6.5, height = 4.9,
   path = "fig/"
 )
 
@@ -495,8 +553,8 @@ wp_time_lag$Interval <- as.numeric(wp_time_lag$Interval)
 
 p_time_lag <- ggplot(wp_time_lag, aes(x=Interval, 
                                       y=mean_Pi,
-                                      color=type)) + 
-  geom_point(size=1.5) +
+                                      shape=type), color = "red") + 
+  geom_point(size=2, color = colors_10[2]) +
   theme(
     # legend.box="vertical", legend.margin=margin(),
     legend.position = 'top',
@@ -505,26 +563,27 @@ p_time_lag <- ggplot(wp_time_lag, aes(x=Interval,
     strip.text = element_text(size = 10),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-  ) +  catscale10 + 
+  ) + scale_colour_manual(values = colors_10[2]) + 
   scale_y_continuous(labels = scales::percent) +
   scale_x_continuous(breaks = c(1,6,12,18,24)) +
   facet_wrap(~Rank, nrow = 2, ncol = 5) + 
   geom_errorbar(aes(ymin=lower_Pi, ymax=upper_Pi), 
                 width=.2,
+                # color = colors_10[2],
                 position=position_dodge(0.05)) + 
-  labs(x = "The selected time interval", 
-       y = 'Predictability'
+  labs(x = "Time lag (half an hour)", 
+       y = '(Cumulative) Cross-Predictability'
   )
 
 print(p_time_lag)
@@ -545,13 +604,23 @@ bk_stats$Rank <- as.factor(bk_stats$Rank)
 bk_stats['dataset'] <- 'BrightKite'
 
 
+bk_stats$category[bk_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+bk_stats$category[bk_stats$category=="social network"]<-"Social tie(s)"
+
+
 gw_stats <- read.csv("final/extra/gw_stats_non_social_vs_social.csv")
 gw_stats$Rank <- as.factor(gw_stats$Rank)
 gw_stats['dataset'] <- 'Gowalla'
 
+gw_stats$category[gw_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+gw_stats$category[gw_stats$category=="social network"]<-"Social tie(s)"
+
 
 df_stats <- do.call("rbind", list(wp_stats, bk_stats, gw_stats))
 
+df_stats$category <- factor(df_stats$category, 
+                                    level=c('Social tie(s)',
+                                            'Non-social co-locator(s)'))
 
 p_ODLR <- ggplot(df_stats, aes(x=Rank, 
                                y=mean_ODLR,
@@ -565,15 +634,15 @@ p_ODLR <- ggplot(df_stats, aes(x=Rank,
     strip.text = element_text(size = 10),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
@@ -599,15 +668,15 @@ p_CODLR <- ggplot(df_stats, aes(x=Rank,
     strip.text = element_text(size = 10),
     legend.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.text = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     axis.title = element_text(
       face = "bold",
-      size = 10
+      size = 12
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
   ) +  catscale10 + 
@@ -639,13 +708,17 @@ ggsave(
 
 ## ------overlap in locations relates to information flow------
 
-NSCLN_wp['category'] <- 'non-social co-location network'
-SRN_wp['category'] <- 'social network'
+NSCLN_wp['category'] <- 'Non-social co-locators'
+SRN_wp['category'] <- 'Social ties'
 
 compare_wp <- do.call("rbind", list(NSCLN_wp, SRN_wp))
 
 compare_wp_top10 <- subset(compare_wp, subset= (Rank==10))
 
+
+compare_wp_top10$category <- factor(compare_wp_top10$category, 
+                            level=c('Social ties',
+                                    'Non-social co-locators'))
 
 ggscatter(compare_wp_top10, x = "CODLR", y = "Pi_alters", color='category',
           add = "reg.line", conf.int = TRUE,
@@ -679,7 +752,7 @@ ggsave(
 ### ------Focus on 1--10: CODLR vs CCP-----
 # social
 ggscatter(SRN_wp %>% filter(Rank <=10), 
-          x = "CODLR", y = "Pi_alters", color = colors_10[2],
+          x = "CODLR", y = "Pi_alters", color = colors_10[1],
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE, 
           cor.coeff.args = list(method = "pearson"),
@@ -711,7 +784,7 @@ ggsave(
 # non-social
 
 ggscatter(NSCLN_wp %>% filter(Rank <=10), 
-          x = "CODLR", y = "Pi_alters", color = colors_10[1],
+          x = "CODLR", y = "Pi_alters", color = colors_10[2],
           add = "reg.line", conf.int = TRUE,
           cor.coef = TRUE, 
           cor.coeff.args = list(method = "pearson"),
@@ -746,9 +819,13 @@ ggsave(
 ## ------- homophily - predictability of ego vs top social and non-social-----
 
 
-wp_top_a_Pi <- read.csv('extra/weeplace/non_social_vs_social_predictability.csv')
-bk_top_a_Pi <- read.csv('extra/brightkite/non_social_vs_social_predictability.csv')
-gw_top_a_Pi <- read.csv('extra/gowalla/non_social_vs_social_predictability.csv')
+# wp_top_a_Pi <- read.csv('extra/weeplace/non_social_vs_social_predictability.csv')
+# bk_top_a_Pi <- read.csv('extra/brightkite/non_social_vs_social_predictability.csv')
+# gw_top_a_Pi <- read.csv('extra/gowalla/non_social_vs_social_predictability.csv')
+
+wp_top_a_Pi <- read.csv('extra/weeplace/separate_non_social_vs_social_predictability.csv')
+bk_top_a_Pi <- read.csv('extra/brightkite/separate_non_social_vs_social_predictability.csv')
+gw_top_a_Pi <- read.csv('extra/gowalla/separate_non_social_vs_social_predictability.csv')
 
 wp_top_a_Pi$dataset <- 'Weeplaces' 
 bk_top_a_Pi$dataset <- 'BrightKite' 
@@ -756,7 +833,14 @@ gw_top_a_Pi$dataset <- 'Gowalla'
 
 top_a_Pi <- do.call("rbind", list(wp_top_a_Pi, bk_top_a_Pi, gw_top_a_Pi))
 
-ggscatter(top_a_Pi, x = "Pi", y = "a_Pi", color='category',
+top_a_Pi$category[top_a_Pi$category=="non-social co-location network"]<-"Non-social co-locator"
+top_a_Pi$category[top_a_Pi$category=="social network"]<-"Social tie"
+
+top_a_Pi$category <- factor(top_a_Pi$category, 
+                                    level=c('Social tie',
+                                            'Non-social co-locator'))
+
+ggscatter(top_a_Pi, x = "Pi", y = "a_Pi", color='category',shape = 'dataset',
           conf.int = TRUE,
           cor.coef = TRUE,
           cor.coeff.args = list(method = "pearson", label.x.npc = 0.3, label.y.npc = 0.04),
@@ -764,18 +848,26 @@ ggscatter(top_a_Pi, x = "Pi", y = "a_Pi", color='category',
           ylab = unname(TeX(c("$\\Pi_{alter}"))), 
           # title = 'Predictability of Ego vs Predictability of Ego\'s top 1 alter'
           ) +
-  geom_abline(intercept =0, slope = 1, show.legend=TRUE, size=1.2) + 
-  # xlim(0.25, 0.9) +
-  # ylim(0.25, 0.9) + 
+  geom_abline(intercept =0, slope = 1, show.legend=TRUE, size=1) + 
+  # xlim(0.18, 0.9) +
+  # ylim(0.25, 0.9) +
   theme(
     legend.title = element_blank(),
-    strip.text = element_text(size = 10)
-    # legend.position = "right",
-    # strip.text.x = element_text(size = 8),
-    # strip.text.y = element_blank(),
-  )+
+    strip.text = element_blank(),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+  ))+
   catscale10 + catscale10_2 + 
-  # scale_x_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks = c(0.1, 0.3, 0.5, 0.7, 0.9)) +
   # scale_y_continuous(labels = scales::percent) +
   facet_wrap(~category + dataset,
              nrow = 2,
@@ -783,4 +875,11 @@ ggscatter(top_a_Pi, x = "Pi", y = "a_Pi", color='category',
              scales = 'free',
              # strip.position="right"
   )
+
+ggsave(
+  filename = "separate_homophily_all_dataset.pdf",
+  device = "pdf",
+  width = 8, height = 5.5,
+  path = "fig/"
+)
 
