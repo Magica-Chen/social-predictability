@@ -154,7 +154,7 @@ ggsave(
 # 
 # print(p_pred)
 
-## ----Fig 2: social ties vs colocator, CE and CP-------------
+## ----Fig 2: social ties vs colocator, CE and CP (weeplace)-------------
 NSCLN_wp<- read.csv('extra/weeplace/non_social_CLN_network_details_H.csv')
 SRN_wp<- read.csv('extra/weeplace/SRN_network_details_H.csv')
 
@@ -252,7 +252,6 @@ p_CP <- ggplot(wp_compare,
   labs(x = "(Cumulative) Cross-Predictability",
        y = "Density")
 print(p_CP)
-
 
 ### -----CE, CP, top-1 social and top 3 non-social, scatter plot-----
 
@@ -361,7 +360,8 @@ wp_stats_details$category <- factor(wp_stats_details$category,
 
 p_CCE_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_CCE, 
                        shape=type,color=category)) + 
-  geom_point(size=3) + geom_hline(yintercept = mean(wp_10alters$LZ_entropy.x),
+  geom_point(size=3) + geom_hline(aes(yintercept = mean(wp_10alters$LZ_entropy.x),
+                                      shape='Ego'),
                                   size =1) + 
   theme(
     legend.box="vertical", legend.margin=margin(),
@@ -424,7 +424,7 @@ p_Pi_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_Pi,
                 width=.2,
                 position=position_dodge(0.05)) + 
   labs(x = "Included number of alters", 
-       y = 'Predictability'
+       y = 'Cumulative Cross-Predictability'
   )
 
 print(p_Pi_alters)
@@ -546,14 +546,14 @@ ggsave(
   path = "fig/"
 )
 
-## -----Time Lag -----------------------
+## -----Time Lag (CCP vs Time Lag)-----------------------
 
 wp_time_lag <- read.csv('final/extra/wp_common_time_lag.csv')
-wp_time_lag$Interval <- as.numeric(wp_time_lag$Interval)
+wp_time_lag$Interval <- as.numeric(wp_time_lag$Interval)/2
 
-p_time_lag <- ggplot(wp_time_lag, aes(x=Interval, 
-                                      y=mean_Pi,
-                                      shape=type), color = "red") + 
+p_time_lag <- ggplot(wp_time_lag %>% filter(type=='Pi'), 
+                     aes(x=Interval, 
+                         y=mean)) + 
   geom_point(size=2, color = colors_10[2]) +
   theme(
     # legend.box="vertical", legend.margin=margin(),
@@ -578,11 +578,11 @@ p_time_lag <- ggplot(wp_time_lag, aes(x=Interval,
   scale_y_continuous(labels = scales::percent) +
   scale_x_continuous(breaks = c(1,6,12,18,24)) +
   facet_wrap(~Rank, nrow = 2, ncol = 5) + 
-  geom_errorbar(aes(ymin=lower_Pi, ymax=upper_Pi), 
+  geom_errorbar(aes(ymin=lower, ymax=upper), 
                 width=.2,
                 # color = colors_10[2],
                 position=position_dodge(0.05)) + 
-  labs(x = "Time lag (half an hour)", 
+  labs(x = "Time lag (hour)", 
        y = '(Cumulative) Cross-Predictability'
   )
 
@@ -592,9 +592,112 @@ print(p_time_lag)
 ggsave(
   filename = "wp_time_lag_effec.pdf", 
   device = "pdf",
-  width = 10, height = 5,
+  width = 8, height = 4,
   path = "fig/"
 )
+
+## -----Time Lag (CCP vs Rank)-----------------------
+
+time_lag_Pi <- wp_time_lag %>% filter(type=='Pi', 
+                                      Interval %in% c(0.5, 3, 6, 12))
+time_lag_Pi$Interval <- as.factor(time_lag_Pi$Interval)
+time_lag_Pi$Rank <- as.factor(time_lag_Pi$Rank)
+
+p_time_lag_rank <- ggplot(time_lag_Pi, 
+                     aes(x=Rank,
+                         fill=Interval,
+                         y=mean)) + 
+  geom_bar(position=position_dodge(), stat="identity", colour='black') +
+  theme(
+    # legend.box="vertical", legend.margin=margin(),
+    legend.position = 'top',
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 10),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2 + 
+  scale_y_continuous(labels = scales::percent) +
+  # scale_x_continuous(breaks = c(1,6,12,18,24)) +
+  geom_errorbar(aes(ymin=lower, ymax=upper), 
+                width=.2,
+                # color = colors_10[2],
+                position=position_dodge(1)) + 
+  labs(x = "Included number of alters", 
+       y = '(Cumulative) Cross-Predictability'
+  )
+
+print(p_time_lag_rank)
+ggsave(
+  filename = "wp_time_lag_rank_effec.pdf", 
+  device = "pdf",
+  width = 4.5, height = 3.5,
+  path = "fig/"
+)
+
+
+## -----Time Lag (CCP vs Rank)-----------------------
+
+time_lag_CODLR <- wp_time_lag %>% filter(type=='CODLR', 
+                                      Interval %in% c(0.5, 3, 6, 12))
+time_lag_CODLR$Interval <- as.factor(time_lag_CODLR$Interval)
+time_lag_CODLR$Rank <- as.factor(time_lag_CODLR$Rank)
+
+p_time_lag_CODLR <- ggplot(time_lag_CODLR, 
+                          aes(x=Rank,
+                              fill=Interval,
+                              y=mean)) + 
+  geom_bar(position=position_dodge(), stat="identity", colour='black') +
+  theme(
+    # legend.box="vertical", legend.margin=margin(),
+    legend.position = 'top',
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 10),
+    legend.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 12
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10  + catscale10_2 + 
+  scale_y_continuous(labels = scales::percent) +
+  # scale_x_continuous(breaks = c(1,6,12,18,24)) +
+  geom_errorbar(aes(ymin=lower, ymax=upper), 
+                width=.2,
+                # color = colors_10[2],
+                position=position_dodge(1)) + 
+  labs(x = "Included number of alters", 
+       y = 'CODLR'
+  )
+
+print(p_time_lag_CODLR)
+ggsave(
+  filename = "wp_time_lag_CODLR_effec.pdf", 
+  device = "pdf",
+  width = 4.5, height = 3.5,
+  path = "fig/"
+)
+
+
 
 ## ------overlap vs rank------
 wp_stats['dataset'] <- 'Weeplaces'
@@ -721,9 +824,14 @@ compare_wp_top10$category <- factor(compare_wp_top10$category,
                                     'Non-social co-locators'))
 
 ggscatter(compare_wp_top10, x = "CODLR", y = "Pi_alters", color='category',
-          add = "reg.line", conf.int = TRUE,
-          cor.coef = TRUE,
-          cor.coeff.args = list(method = "pearson", label.x.npc = 0.35, label.y.npc = 0.03),
+          add = "reg.line",
+          add.params = list(color = "black", 
+                            size = 1,
+                            fill = "lightgray"),
+          conf.int = TRUE, cor.coef = TRUE,
+          cor.coeff.args = list(method = "pearson",
+                                label.x.npc = 0.35, 
+                                label.y.npc = 0.03),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Pi_{ego|alters}")))) +
   theme(
@@ -753,8 +861,11 @@ ggsave(
 # social
 ggscatter(SRN_wp %>% filter(Rank <=10), 
           x = "CODLR", y = "Pi_alters", color = colors_10[1],
-          add = "reg.line", conf.int = TRUE,
-          cor.coef = TRUE, 
+          add = "reg.line", 
+          add.params = list(color = "black", 
+                            size = 1,
+                            fill = "lightgray"),
+          conf.int = TRUE, cor.coef = TRUE,
           cor.coeff.args = list(method = "pearson"),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Pi_{ego|alters}")))) +
@@ -785,8 +896,11 @@ ggsave(
 
 ggscatter(NSCLN_wp %>% filter(Rank <=10), 
           x = "CODLR", y = "Pi_alters", color = colors_10[2],
-          add = "reg.line", conf.int = TRUE,
-          cor.coef = TRUE, 
+          add = "reg.line", 
+          add.params = list(color = "black", 
+                            size = 1,
+                            fill = "lightgray"),
+          conf.int = TRUE, cor.coef = TRUE,
           cor.coeff.args = list(method = "pearson"),
           xlab = unname(TeX(c("$\\eta_{ego}(alters)"))),
           ylab = unname(TeX(c("$\\Pi_{ego|alters}")))) +
@@ -883,3 +997,130 @@ ggsave(
   path = "fig/"
 )
 
+
+
+
+## ------CE rank 5 & rank 10-----------------------
+
+NSCLN_wp_full<- read.csv('extra/weeplace/non_social_CLN_network_details_H.csv')
+SRN_wp_full<- read.csv('extra/weeplace/SRN_network_details_H.csv')
+NSCLN_wp_full$dataset = 'Weeplaces'
+SRN_wp_full$dataset = 'Weeplaces'
+NSCLN_wp_full$category = 'Non-social co-locator'
+SRN_wp_full$category = 'Social tie'
+
+NSCLN_bk_full<- read.csv('extra/brightkite/non_social_CLN_network_details_H.csv')
+SRN_bk_full<- read.csv('extra/brightkite/SRN_network_details_H.csv')
+NSCLN_bk_full$dataset = 'BrightKite'
+SRN_bk_full$dataset = 'BrightKite'
+NSCLN_bk_full$category = 'Non-social co-locator'
+SRN_bk_full$category = 'Social tie'
+
+NSCLN_gw_full<- read.csv('extra/gowalla/non_social_CLN_network_details_H.csv')
+SRN_gw_full<- read.csv('extra/gowalla/SRN_network_details_H.csv')
+NSCLN_gw_full$dataset = 'Gowalla'
+SRN_gw_full$dataset = 'Gowalla'
+NSCLN_gw_full$category = 'Non-social co-locator'
+SRN_gw_full$category = 'Social tie'
+
+compare_full<- do.call("rbind", list(NSCLN_wp_full, SRN_wp_full,
+                                     NSCLN_bk_full, SRN_bk_full,
+                                     NSCLN_gw_full, SRN_gw_full))
+compare_full$category <- factor(compare_full$category, 
+                                levels = c('Social tie',
+                                         'Non-social co-locator'))
+
+compare_full_5 <- compare_full %>% filter(Rank ==5)
+
+
+p_CE_rank5 <- ggplot(compare_full_5, aes(x = CE_alter)) +
+  geom_density(size=1, aes(color=category),,show.legend=FALSE)+
+  stat_density(aes(colour=category), size=1.2,
+               geom="line",position="identity") +
+  # geom_vline(data=signif_CE5, aes(xintercept = Mean, color = dataset),
+  #            size=1.5) + 
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  facet_wrap(~dataset) + 
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))),
+       y = "Density")
+
+print(p_CE_rank5)
+
+compare_full_10 <- compare_full %>% filter(Rank ==10)
+
+p_CE_rank10 <- ggplot(compare_full_10 , aes(x = CE_alter)) +
+  stat_density(aes(colour=category), size=1.2,
+               geom="line",position="identity") +
+  # geom_vline(data=signif_CE10, aes(xintercept = Mean, color = dataset),
+  #            size=1.5) + 
+  # geom_density(aes(fill = dataset, color=dataset),
+  #              alpha = 0.6, position = "identity"
+  # ) +
+  facet_wrap(~dataset) + 
+  scale_color_manual(values = colors_10[1:3]) +
+  labs(x = unname(TeX(c("Cross-entropy  $\\hat{S}_{A|B}$ (bits)"))),
+       y = "Density")
+  # xlim(0,15)
+
+print(p_CE_rank10)
+
+
+
+ggarrange(
+  p_CE_rank5,  p_CE_rank10, 
+  labels = c("A", "B"), nrow = 2, ncol = 1,
+  common.legend = TRUE, legend = "top"
+)
+
+
+ggsave(
+  filename = "Histogram_CE_5_10_social_non_social.pdf", device = "pdf",
+  width = 8.00, height =6.00,
+  path = "fig/"
+)
+
+## ------CB-1H vs SW-1H (only WP)----
+CB_vs_SW <- read.csv('final/extra/wp_stats_non_social_vs_SW1.csv')
+CB_vs_SW$Rank <- as.factor(CB_vs_SW$Rank)
+
+p_CCP_SW <- ggplot(CB_vs_SW, aes(x=Rank, y=mean_Pi_alters, 
+                                 color=category)) + 
+  geom_point(size=3) + 
+  theme(
+    legend.box="vertical", legend.margin=margin(),
+    legend.position = 'top',
+    legend.title = element_blank(),
+    # legend.position = "none",
+    strip.text = element_text(size = 15),
+    legend.text = element_text(
+      face = "bold",
+      size = 14
+    ),
+    axis.text = element_text(
+      face = "bold",
+      size = 14
+    ),
+    axis.title = element_text(
+      face = "bold",
+      size = 14
+    ),
+    # plot.title=element_text(face='bold', size=12,hjust = 0.5)
+  ) +  catscale10 + 
+  scale_y_continuous(labels = scales::percent) + 
+  geom_errorbar(aes(ymin=lower_Pi_alters, ymax=upper_Pi_alters), 
+                width=.2,
+                position=position_dodge(0.01)) + 
+  labs(x = "Included number of alters", 
+       y = 'Cumulative Cross-Predictability'
+  )
+
+print(p_CCP_SW)
+
+ggsave(
+  filename = "wp_CCP_CB_vs_SW.pdf", device = "pdf",
+  # width = 8.00, height =6.00,
+  path = "fig/"
+)
