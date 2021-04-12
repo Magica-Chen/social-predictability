@@ -168,10 +168,10 @@ SRN_1 <- SRN_wp %>% filter(userid_x %in% common_wp, Rank == '1')
 SRN_1$category <- 'Top social tie'
 
 NSCLN_1 <- NSCLN_wp %>% filter(userid_x %in% common_wp, Rank == '1') 
-NSCLN_1$category <- 'Top non-social co-locator'
+NSCLN_1$category <- 'Top non-social colocator'
 
 NSCLN_3 <- NSCLN_wp %>% filter(userid_x %in% common_wp, Rank == '3') 
-NSCLN_3$category <- 'Top 3 non-social co-locators'
+NSCLN_3$category <- 'Top 3 non-social colocators'
 
 wp_compare <- do.call("rbind", list(SRN_1, NSCLN_1, NSCLN_3)) 
 # df_compare$Pi_alters_ratio <- df_compare$Pi_alters / df_compare$Pi
@@ -179,13 +179,20 @@ wp_compare <- do.call("rbind", list(SRN_1, NSCLN_1, NSCLN_3))
 ### ---- CE, CP top 1 non-social, social, top 3 non-social, histogram ------
 wp_compare$category <- factor(wp_compare$category, 
                               levels = c('Top social tie',
-                                         'Top non-social co-locator',
-                                         'Top 3 non-social co-locators'))
+                                         'Top non-social colocator',
+                                         'Top 3 non-social colocators'))
+signif_CE <- wp_compare %>% group_by(category)%>% 
+  summarise(Mean=mean(CCE_alters), Median=median(CCE_alters), Std=sd(CCE_alters))
+signif_CP <- wp_compare %>% group_by(category)%>% 
+  summarise(Mean=mean(Pi_alters), Median=median(Pi_alters), Std=sd(Pi_alters))
+
 p_CE <- ggplot(wp_compare, 
                 aes(x = CCE_alters)) +
   geom_density(size=2, aes(color=category),show.legend=FALSE)+
   stat_density(aes(colour=category), size=2,
                geom="line",position="identity") +
+  geom_vline(data=signif_CE, aes(xintercept = Median, color = category),
+             size=1, linetype = "dotdash") + 
   catscale10 + 
   theme(
     legend.position = c(0.3, 0.85),
@@ -222,6 +229,8 @@ p_CP <- ggplot(wp_compare,
   geom_density(size=2, aes(color=category),,show.legend=FALSE)+
   stat_density(aes(colour=category), size=2,
                geom="line",position="identity") +
+  geom_vline(data=signif_CP, aes(xintercept = Median, color = category),
+             size=1, linetype = "dotdash") + 
   catscale10 + 
   theme(
     legend.position = c(0.72, 0.85),
@@ -327,7 +336,7 @@ print(p_scatter_ent)
 
 wp_stats <- read.csv("final/extra/wp_stats_non_social_vs_social.csv")
 
-wp_stats$category[wp_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+wp_stats$category[wp_stats$category=="non-social co-location network"]<-"Non-social colocator(s)"
 wp_stats$category[wp_stats$category=="social network"]<-"Social tie(s)"
 
 wp_stats$Rank <- as.factor(wp_stats$Rank)
@@ -356,7 +365,7 @@ wp_stats_ego_alters$type <- 'Alter(s) and ego'
 wp_stats_details <- do.call("rbind", list(wp_stats_alters, wp_stats_ego_alters))
 wp_stats_details$category <- factor(wp_stats_details$category, 
                                     level=c('Social tie(s)',
-                                            'Non-social co-locator(s)'))
+                                            'Non-social colocator(s)'))
 
 p_CCE_alters <- ggplot(wp_stats_details, aes(x=Rank, y=mean_CCE, 
                        shape=type,color=category)) + 
@@ -527,7 +536,7 @@ p_rank_ratio2 <- ggplot(rank_vs_ratio %>% filter(Rank!=1) , aes(x=Rank, y=mean_e
   geom_errorbar(aes(ymin=lower_equality_ratio, ymax=upper_equality_ratio), 
                 width=.2,
                 position=position_dodge(0.05)) + 
-  labs(x = "The number of non-social co-locators included", 
+  labs(x = "The number of non-social colocators included", 
        y = 'Predictability ratio'
   )
 
@@ -707,7 +716,7 @@ bk_stats$Rank <- as.factor(bk_stats$Rank)
 bk_stats['dataset'] <- 'BrightKite'
 
 
-bk_stats$category[bk_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+bk_stats$category[bk_stats$category=="non-social co-location network"]<-"Non-social colocator(s)"
 bk_stats$category[bk_stats$category=="social network"]<-"Social tie(s)"
 
 
@@ -715,7 +724,7 @@ gw_stats <- read.csv("final/extra/gw_stats_non_social_vs_social.csv")
 gw_stats$Rank <- as.factor(gw_stats$Rank)
 gw_stats['dataset'] <- 'Gowalla'
 
-gw_stats$category[gw_stats$category=="non-social co-location network"]<-"Non-social co-locator(s)"
+gw_stats$category[gw_stats$category=="non-social co-location network"]<-"Non-social colocator(s)"
 gw_stats$category[gw_stats$category=="social network"]<-"Social tie(s)"
 
 
@@ -723,7 +732,7 @@ df_stats <- do.call("rbind", list(wp_stats, bk_stats, gw_stats))
 
 df_stats$category <- factor(df_stats$category, 
                                     level=c('Social tie(s)',
-                                            'Non-social co-locator(s)'))
+                                            'Non-social colocator(s)'))
 
 p_ODLR <- ggplot(df_stats, aes(x=Rank, 
                                y=mean_ODLR,
@@ -811,7 +820,7 @@ ggsave(
 
 ## ------overlap in locations relates to information flow------
 
-NSCLN_wp['category'] <- 'Non-social co-locators'
+NSCLN_wp['category'] <- 'Non-social colocators'
 SRN_wp['category'] <- 'Social ties'
 
 compare_wp <- do.call("rbind", list(NSCLN_wp, SRN_wp))
@@ -821,7 +830,7 @@ compare_wp_top10 <- subset(compare_wp, subset= (Rank==10))
 
 compare_wp_top10$category <- factor(compare_wp_top10$category, 
                             level=c('Social ties',
-                                    'Non-social co-locators'))
+                                    'Non-social colocators'))
 
 ggscatter(compare_wp_top10, x = "CODLR", y = "Pi_alters", color='category',
           add = "reg.line",
@@ -1083,7 +1092,16 @@ ggsave(
 )
 
 ## ------CB-1H vs SW-1H (only WP)----
-CB_vs_SW <- read.csv('final/extra/wp_stats_non_social_vs_SW1.csv')
+CB_vs_SW_wp <- read.csv('final/extra/wp_stats_non_social_vs_SW1.csv')
+CB_vs_SW_wp$dataset <- 'Weeplaces'
+CB_vs_SW_bk <- read.csv('final/extra/bk_stats_non_social_vs_SW1.csv')
+CB_vs_SW_bk$dataset <- 'BrightKite'
+CB_vs_SW_gw <- read.csv('final/extra/gw_stats_non_social_vs_SW1.csv')
+CB_vs_SW_gw$dataset <- 'Gowalla'
+
+CB_vs_SW <- do.call("rbind", list(CB_vs_SW_wp, CB_vs_SW_bk, CB_vs_SW_gw))
+
+
 CB_vs_SW$Rank <- as.factor(CB_vs_SW$Rank)
 
 p_CCP_SW <- ggplot(CB_vs_SW, aes(x=Rank, y=mean_Pi_alters, 
@@ -1108,7 +1126,8 @@ p_CCP_SW <- ggplot(CB_vs_SW, aes(x=Rank, y=mean_Pi_alters,
       size = 14
     ),
     # plot.title=element_text(face='bold', size=12,hjust = 0.5)
-  ) +  catscale10 + 
+  ) +  catscale10 +
+  facet_wrap(~dataset,scales = 'free_y') + 
   scale_y_continuous(labels = scales::percent) + 
   geom_errorbar(aes(ymin=lower_Pi_alters, ymax=upper_Pi_alters), 
                 width=.2,
@@ -1120,7 +1139,7 @@ p_CCP_SW <- ggplot(CB_vs_SW, aes(x=Rank, y=mean_Pi_alters,
 print(p_CCP_SW)
 
 ggsave(
-  filename = "wp_CCP_CB_vs_SW.pdf", device = "pdf",
-  # width = 8.00, height =6.00,
+  filename = "CCP_CB_vs_SW.pdf", device = "pdf",
+  width = 8.00, height =3.3,
   path = "fig/"
 )
