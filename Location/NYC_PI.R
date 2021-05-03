@@ -28,7 +28,7 @@ location_NYC$datetime <- format(as.POSIXct(location_NYC$datetime,
                          "%Y-%m-%d %H:%M:%S"
 )
 
-write.csv(x = location_NYC, row.names = FALSE,
+write.csv(x = location_NYC, row.names = FALSE, fileEncoding = "UTF-8",
           file='Location//NYC_checkins.csv')
 
 #-----------------------TKY -------------------------
@@ -44,6 +44,6 @@ location_TKY$datetime <- format(as.POSIXct(location_TKY$datetime,
                                 "%Y-%m-%d %H:%M:%S"
 )
 
-write.csv(x = location_TKY, row.names = FALSE,
+write.csv(x = location_TKY, row.names = FALSE, fileEncoding = "UTF-8",
           file='Location//TKY_checkins.csv')
 

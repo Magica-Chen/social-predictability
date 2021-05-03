@@ -6,6 +6,8 @@ library("latex2exp")
 library("magrittr")
 library("ggpubr")
 library("tidyr")
+library("ggmap")
+library("viridis")
 
 colors_10 <- c(
   "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -16,6 +18,13 @@ catscale10_2 <- scale_fill_manual(values = colors_10)
 
 
 location_Pi <- read.csv('Location/location_Pi.csv')
+checkin <- read.csv('data/weeplace_checkins.csv')
+
+clear_placeid <- checkin %>% distinct(placeid, lat, lon, .keep_all = TRUE) %>%
+  select(placeid, lat, lon) %>%
+  group_by(placeid) %>%
+  filter(n() == 1) %>% pull(placeid)
+
 # location_no_cat <- location_Pi %>% 
 #   distinct(placeid, target, .keep_all = TRUE) %>% 
 #   select(1:7) %>% melt(id.vars = c("placeid", 
@@ -24,22 +33,20 @@ location_Pi <- read.csv('Location/location_Pi.csv')
 #                                    "target"))  
 
 # --------------count and filter -------------
+# The number of distinct placeid (ambiguous placeid, same placeid multiple lat and lon)
+N_placeid <- location_Pi %>% distinct(placeid) %>% count()
 
-clear_LP <- location_Pi %>% 
-  group_by(placeid) %>%
-  filter(n() == 2)
+
+clear_LP <- location_Pi %>% filter(placeid %in% clear_placeid)
+N_clear_placeid <- clear_LP %>% distinct(placeid) %>% count()
+
 
 location_no_cat <- clear_LP %>% 
-  distinct(placeid, target, .keep_all = TRUE) %>% 
   select(1:7) %>% melt(id.vars = c("placeid", 
                                    "count",
                                    "nunique",
                                    "target"))  
-
-
 #-------No category-----------------------------
-
-
 
 ggplot(location_no_cat, aes(x = value)) +
   geom_histogram( aes(fill=variable),
@@ -139,15 +146,101 @@ qmplot(lon, lat, data = Seoul, maptype = "toner-lite", color = mean_Pi) +
 newyork <- location_full_new %>% filter(city=='New York', lat < 41, 
                                         lat > 10, lon < 0)
 
+unique(newyork[c("placeid")])
+
 us <- c(left = -74.2, bottom = 40.5, right = -73.6, top = 40.9)
 # us <- c(left = -74.2, bottom = 40.6, right = -73.7, top = 40.9)
 get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap()
 
-qmplot(lon, lat, data = newyork, maptype = "toner-lite", color = mean_Pi) + 
-  scale_colour_gradient(low = "yellow", high = "red")
+
+my_breaks <- c(0.37, 0.41, 0.45, 0.49, 0.53, 0.57, 0.61, 0.65, 0.69)
+
+p_food <- qmplot(lon, lat, data = newyork %>% filter(category == 'Food'), 
+       maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.7)
+                         )
+
+p_night<- qmplot(lon, lat, data = newyork %>% filter(category == 'Nightlife Spots'), 
+       maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.67)
+  )
 
 
-#-------------Seoul ---------------
+p_travel <- qmplot(lon, lat, data = newyork %>% filter(category == 'Travel Spots'), 
+       maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+
+p_park <- qmplot(lon, lat, data = newyork %>% filter(category == 'Parks & Outdoors'), 
+                   maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+p_shop <- qmplot(lon, lat, data = newyork %>% filter(category == 'Shops'), 
+                 maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+p_art <- qmplot(lon, lat, data = newyork %>% filter(category == 'Arts & Entertainment'), 
+                 maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+p_edu <- qmplot(lon, lat, data = newyork %>% filter(category == 'College & Education'), 
+                maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+p_work<- qmplot(lon, lat, data = newyork %>% filter(category == 'Homes, Work, Others'), 
+                maptype = "toner-lite", color = mean_Pi) + 
+  scale_colour_gradientn(colours = rev(magma(10)),
+                         breaks = my_breaks, labels = my_breaks,
+                         limits = c(0.37, 0.70)
+  )
+
+print(p_food)
+
+ggarrange(
+  p_food, p_night, p_travel, p_park,
+  p_art, p_edu, p_shop, p_work,
+  labels = c("Food", "Nightlife Spots", "Travel Spots", "Parks & Outdoors", 
+             "Arts & Entertainment", "College & Education", "Shops", "Homes, Work, Others"), 
+  nrow = 2, ncol = 4,
+  legend = FALSE
+)
+
+
+# virlin plot --------------------------
+
+newyork_full <- location_full %>% filter(city=='New York', lat < 41, 
+                                        lat > 10, lon < 0)
+
+length(unique(newyork$placeid))
+length(unique(newyork_full$placeid))
+
+ggplot(newyork_full, aes(x=category, y = mean_Pi)) +
+  geom_violin(aes(fill = category)
+  ) +
+  theme(axis.text.x = element_blank()) + 
+  catscale10 + catscale10_2
+
+write.csv(newyork, 'Location/newyork.csv')
+#-------------London ---------------
 
 
 London <- location_full_new %>% filter(city=='London',
