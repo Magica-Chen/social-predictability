@@ -19,23 +19,23 @@ Rank,Percentage,network,dataset,alpha
 8,0.9813664596273292,Social network,Mobile Phone,0.05
 9,0.9813664596273292,Social network,Mobile Phone,0.05
 10,0.9834368530020704,Social network,Mobile Phone,0.05
-1,0.8074534161490683,Non-social colocation network,Weeplaces,0.01
-2,0.8385093167701864,Non-social colocation network,Weeplaces,0.01
-3,0.8902691511387164,Non-social colocation network,Weeplaces,0.01
-4,0.8964803312629399,Non-social colocation network,Weeplaces,0.01
-5,0.9089026915113871,Non-social colocation network,Weeplaces,0.01
-6,0.9296066252587992,Non-social colocation network,Weeplaces,0.01
-7,0.9254658385093167,Non-social colocation network,Weeplaces,0.01
-8,0.9420289855072463,Non-social colocation network,Weeplaces,0.01
-9,0.9420289855072463,Non-social colocation network,Weeplaces,0.01
-10,0.9523809523809523,Non-social colocation network,Weeplaces,0.01
-1,0.917184265010352,Social network,Weeplaces,0.01
-2,0.9461697722567288,Social network,Weeplaces,0.01
-3,0.968944099378882,Social network,Weeplaces,0.01
-4,0.9751552795031055,Social network,Weeplaces,0.01
-5,0.979296066252588,Social network,Weeplaces,0.01
-6,0.9813664596273292,Social network,Weeplaces,0.01
-7,0.9772256728778468,Social network,Weeplaces,0.01
-8,0.9813664596273292,Social network,Weeplaces,0.01
-9,0.9813664596273292,Social network,Weeplaces,0.01
-10,0.9834368530020704,Social network,Weeplaces,0.01
+1,0.8074534161490683,Non-social colocation network,Mobile Phone,0.01
+2,0.8385093167701864,Non-social colocation network,Mobile Phone,0.01
+3,0.8902691511387164,Non-social colocation network,Mobile Phone,0.01
+4,0.8964803312629399,Non-social colocation network,Mobile Phone,0.01
+5,0.9089026915113871,Non-social colocation network,Mobile Phone,0.01
+6,0.9296066252587992,Non-social colocation network,Mobile Phone,0.01
+7,0.9254658385093167,Non-social colocation network,Mobile Phone,0.01
+8,0.9420289855072463,Non-social colocation network,Mobile Phone,0.01
+9,0.9420289855072463,Non-social colocation network,Mobile Phone,0.01
+10,0.9523809523809523,Non-social colocation network,Mobile Phone,0.01
+1,0.917184265010352,Social network,Mobile Phone,0.01
+2,0.9461697722567288,Social network,Mobile Phone,0.01
+3,0.968944099378882,Social network,Mobile Phone,0.01
+4,0.9751552795031055,Social network,Mobile Phone,0.01
+5,0.979296066252588,Social network,Mobile Phone,0.01
+6,0.9813664596273292,Social network,Mobile Phone,0.01
+7,0.9772256728778468,Social network,Mobile Phone,0.01
+8,0.9813664596273292,Social network,Mobile Phone,0.01
+9,0.9813664596273292,Social network,Mobile Phone,0.01
+10,0.9834368530020704,Social network,Mobile Phone,0.01

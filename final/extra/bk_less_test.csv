@@ -19,23 +19,23 @@ Rank,Percentage,network,dataset,alpha
 8,0.9090909090909091,Social network,BrightKite,0.05
 9,0.9090909090909091,Social network,BrightKite,0.05
 10,0.9090909090909091,Social network,BrightKite,0.05
-1,0.696969696969697,Non-social colocation network,Weeplaces,0.01
-2,0.8484848484848485,Non-social colocation network,Weeplaces,0.01
-3,0.8484848484848485,Non-social colocation network,Weeplaces,0.01
-4,0.9090909090909091,Non-social colocation network,Weeplaces,0.01
-5,0.9090909090909091,Non-social colocation network,Weeplaces,0.01
-6,0.8787878787878788,Non-social colocation network,Weeplaces,0.01
-7,0.8787878787878788,Non-social colocation network,Weeplaces,0.01
-8,0.8787878787878788,Non-social colocation network,Weeplaces,0.01
-9,0.8484848484848485,Non-social colocation network,Weeplaces,0.01
-10,0.8484848484848485,Non-social colocation network,Weeplaces,0.01
-1,0.7575757575757576,Social network,Weeplaces,0.01
-2,0.8181818181818182,Social network,Weeplaces,0.01
-3,0.8787878787878788,Social network,Weeplaces,0.01
-4,0.9090909090909091,Social network,Weeplaces,0.01
-5,0.8787878787878788,Social network,Weeplaces,0.01
-6,0.8484848484848485,Social network,Weeplaces,0.01
-7,0.9090909090909091,Social network,Weeplaces,0.01
-8,0.9090909090909091,Social network,Weeplaces,0.01
-9,0.9090909090909091,Social network,Weeplaces,0.01
-10,0.9090909090909091,Social network,Weeplaces,0.01
+1,0.696969696969697,Non-social colocation network,BrightKite,0.01
+2,0.8484848484848485,Non-social colocation network,BrightKite,0.01
+3,0.8484848484848485,Non-social colocation network,BrightKite,0.01
+4,0.9090909090909091,Non-social colocation network,BrightKite,0.01
+5,0.9090909090909091,Non-social colocation network,BrightKite,0.01
+6,0.8787878787878788,Non-social colocation network,BrightKite,0.01
+7,0.8787878787878788,Non-social colocation network,BrightKite,0.01
+8,0.8787878787878788,Non-social colocation network,BrightKite,0.01
+9,0.8484848484848485,Non-social colocation network,BrightKite,0.01
+10,0.8484848484848485,Non-social colocation network,BrightKite,0.01
+1,0.7575757575757576,Social network,BrightKite,0.01
+2,0.8181818181818182,Social network,BrightKite,0.01
+3,0.8787878787878788,Social network,BrightKite,0.01
+4,0.9090909090909091,Social network,BrightKite,0.01
+5,0.8787878787878788,Social network,BrightKite,0.01
+6,0.8484848484848485,Social network,BrightKite,0.01
+7,0.9090909090909091,Social network,BrightKite,0.01
+8,0.9090909090909091,Social network,BrightKite,0.01
+9,0.9090909090909091,Social network,BrightKite,0.01
+10,0.9090909090909091,Social network,BrightKite,0.01
