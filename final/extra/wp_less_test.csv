@@ -1,21 +1,21 @@
-Number of Included Alters,Percentage,network,dataset
-1,0.4623115577889447,NSCN,Gowalla
-2,0.48743718592964824,NSCN,Gowalla
-3,0.46733668341708545,NSCN,Gowalla
-4,0.5125628140703518,NSCN,Gowalla
-5,0.5628140703517588,NSCN,Gowalla
-6,0.5879396984924623,NSCN,Gowalla
-7,0.592964824120603,NSCN,Gowalla
-8,0.5829145728643216,NSCN,Gowalla
-9,0.5678391959798995,NSCN,Gowalla
-10,0.5778894472361809,NSCN,Gowalla
-1,0.5628140703517588,SRN,Gowalla
-2,0.5276381909547738,SRN,Gowalla
-3,0.5979899497487438,SRN,Gowalla
-4,0.6231155778894473,SRN,Gowalla
-5,0.6180904522613065,SRN,Gowalla
-6,0.628140703517588,SRN,Gowalla
-7,0.6130653266331658,SRN,Gowalla
-8,0.6130653266331658,SRN,Gowalla
-9,0.6030150753768844,SRN,Gowalla
-10,0.6130653266331658,SRN,Gowalla
+Rank,Percentage,network,dataset
+1,0.4623115577889447,Non-social colocation network,Weeplaces
+2,0.48743718592964824,Non-social colocation network,Weeplaces
+3,0.46733668341708545,Non-social colocation network,Weeplaces
+4,0.5125628140703518,Non-social colocation network,Weeplaces
+5,0.5628140703517588,Non-social colocation network,Weeplaces
+6,0.5879396984924623,Non-social colocation network,Weeplaces
+7,0.592964824120603,Non-social colocation network,Weeplaces
+8,0.5829145728643216,Non-social colocation network,Weeplaces
+9,0.5678391959798995,Non-social colocation network,Weeplaces
+10,0.5778894472361809,Non-social colocation network,Weeplaces
+1,0.5628140703517588,Social network,Weeplaces
+2,0.5276381909547738,Social network,Weeplaces
+3,0.5979899497487438,Social network,Weeplaces
+4,0.6231155778894473,Social network,Weeplaces
+5,0.6180904522613065,Social network,Weeplaces
+6,0.628140703517588,Social network,Weeplaces
+7,0.6130653266331658,Social network,Weeplaces
+8,0.6130653266331658,Social network,Weeplaces
+9,0.6030150753768844,Social network,Weeplaces
+10,0.6130653266331658,Social network,Weeplaces

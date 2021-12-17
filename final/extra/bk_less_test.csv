@@ -1,21 +1,21 @@
-Number of Included Alters,Percentage,network,dataset
-1,0.7272727272727273,NSCN,Gowalla
-2,0.8484848484848485,NSCN,Gowalla
-3,0.8484848484848485,NSCN,Gowalla
-4,0.9090909090909091,NSCN,Gowalla
-5,0.9090909090909091,NSCN,Gowalla
-6,0.8787878787878788,NSCN,Gowalla
-7,0.8787878787878788,NSCN,Gowalla
-8,0.8787878787878788,NSCN,Gowalla
-9,0.8484848484848485,NSCN,Gowalla
-10,0.8484848484848485,NSCN,Gowalla
-1,0.7575757575757576,SRN,Gowalla
-2,0.8484848484848485,SRN,Gowalla
-3,0.8787878787878788,SRN,Gowalla
-4,0.9090909090909091,SRN,Gowalla
-5,0.8787878787878788,SRN,Gowalla
-6,0.8484848484848485,SRN,Gowalla
-7,0.9090909090909091,SRN,Gowalla
-8,0.9090909090909091,SRN,Gowalla
-9,0.9090909090909091,SRN,Gowalla
-10,0.9090909090909091,SRN,Gowalla
+Rank,Percentage,network,dataset
+1,0.7272727272727273,Non-social colocation network,BrightKite
+2,0.8484848484848485,Non-social colocation network,BrightKite
+3,0.8484848484848485,Non-social colocation network,BrightKite
+4,0.9090909090909091,Non-social colocation network,BrightKite
+5,0.9090909090909091,Non-social colocation network,BrightKite
+6,0.8787878787878788,Non-social colocation network,BrightKite
+7,0.8787878787878788,Non-social colocation network,BrightKite
+8,0.8787878787878788,Non-social colocation network,BrightKite
+9,0.8484848484848485,Non-social colocation network,BrightKite
+10,0.8484848484848485,Non-social colocation network,BrightKite
+1,0.7575757575757576,Social network,BrightKite
+2,0.8484848484848485,Social network,BrightKite
+3,0.8787878787878788,Social network,BrightKite
+4,0.9090909090909091,Social network,BrightKite
+5,0.8787878787878788,Social network,BrightKite
+6,0.8484848484848485,Social network,BrightKite
+7,0.9090909090909091,Social network,BrightKite
+8,0.9090909090909091,Social network,BrightKite
+9,0.9090909090909091,Social network,BrightKite
+10,0.9090909090909091,Social network,BrightKite

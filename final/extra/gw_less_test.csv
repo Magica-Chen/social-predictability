@@ -1,21 +1,21 @@
-Number of Included Alters,Percentage,network,dataset
-1,0.5670103092783505,SRN,Gowalla
-2,0.5567010309278351,SRN,Gowalla
-3,0.5051546391752577,SRN,Gowalla
-4,0.5154639175257731,SRN,Gowalla
-5,0.5154639175257731,SRN,Gowalla
-6,0.5360824742268041,SRN,Gowalla
-7,0.5154639175257731,SRN,Gowalla
-8,0.5773195876288659,SRN,Gowalla
-9,0.5876288659793815,SRN,Gowalla
-10,0.6082474226804123,SRN,Gowalla
-1,0.6701030927835051,SRN,Gowalla
-2,0.6494845360824743,SRN,Gowalla
-3,0.6494845360824743,SRN,Gowalla
-4,0.6804123711340206,SRN,Gowalla
-5,0.7422680412371134,SRN,Gowalla
-6,0.7010309278350515,SRN,Gowalla
-7,0.7216494845360825,SRN,Gowalla
-8,0.6907216494845361,SRN,Gowalla
-9,0.6701030927835051,SRN,Gowalla
-10,0.6804123711340206,SRN,Gowalla
+Rank,Percentage,network,dataset
+1,0.5670103092783505,Non-social colocation network,Gowalla
+2,0.5567010309278351,Non-social colocation network,Gowalla
+3,0.5051546391752577,Non-social colocation network,Gowalla
+4,0.5154639175257731,Non-social colocation network,Gowalla
+5,0.5154639175257731,Non-social colocation network,Gowalla
+6,0.5360824742268041,Non-social colocation network,Gowalla
+7,0.5154639175257731,Non-social colocation network,Gowalla
+8,0.5773195876288659,Non-social colocation network,Gowalla
+9,0.5876288659793815,Non-social colocation network,Gowalla
+10,0.6082474226804123,Non-social colocation network,Gowalla
+1,0.6701030927835051,Social network,Gowalla
+2,0.6494845360824743,Social network,Gowalla
+3,0.6494845360824743,Social network,Gowalla
+4,0.6804123711340206,Social network,Gowalla
+5,0.7422680412371134,Social network,Gowalla
+6,0.7010309278350515,Social network,Gowalla
+7,0.7216494845360825,Social network,Gowalla
+8,0.6907216494845361,Social network,Gowalla
+9,0.6701030927835051,Social network,Gowalla
+10,0.6804123711340206,Social network,Gowalla
