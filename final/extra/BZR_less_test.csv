@@ -1,21 +1,41 @@
-Rank,Percentage,network,dataset
-1,0.8136645962732919,Non-social colocation network,Mobile Phone
-2,0.8530020703933747,Non-social colocation network,Mobile Phone
-3,0.8964803312629399,Non-social colocation network,Mobile Phone
-4,0.9006211180124224,Non-social colocation network,Mobile Phone
-5,0.9151138716356108,Non-social colocation network,Mobile Phone
-6,0.9399585921325052,Non-social colocation network,Mobile Phone
-7,0.9337474120082816,Non-social colocation network,Mobile Phone
-8,0.9440993788819876,Non-social colocation network,Mobile Phone
-9,0.94824016563147,Non-social colocation network,Mobile Phone
-10,0.9523809523809523,Non-social colocation network,Mobile Phone
-1,0.9213250517598344,Social network,Mobile Phone
-2,0.9523809523809523,Social network,Mobile Phone
-3,0.9710144927536232,Social network,Mobile Phone
-4,0.9772256728778468,Social network,Mobile Phone
-5,0.9834368530020704,Social network,Mobile Phone
-6,0.9813664596273292,Social network,Mobile Phone
-7,0.979296066252588,Social network,Mobile Phone
-8,0.9813664596273292,Social network,Mobile Phone
-9,0.9813664596273292,Social network,Mobile Phone
-10,0.9834368530020704,Social network,Mobile Phone
+Rank,Percentage,network,dataset,alpha
+1,0.8136645962732919,Non-social colocation network,Mobile Phone,0.05
+2,0.8530020703933747,Non-social colocation network,Mobile Phone,0.05
+3,0.8964803312629399,Non-social colocation network,Mobile Phone,0.05
+4,0.9006211180124224,Non-social colocation network,Mobile Phone,0.05
+5,0.9151138716356108,Non-social colocation network,Mobile Phone,0.05
+6,0.9399585921325052,Non-social colocation network,Mobile Phone,0.05
+7,0.9337474120082816,Non-social colocation network,Mobile Phone,0.05
+8,0.9440993788819876,Non-social colocation network,Mobile Phone,0.05
+9,0.94824016563147,Non-social colocation network,Mobile Phone,0.05
+10,0.9523809523809523,Non-social colocation network,Mobile Phone,0.05
+1,0.9213250517598344,Social network,Mobile Phone,0.05
+2,0.9523809523809523,Social network,Mobile Phone,0.05
+3,0.9710144927536232,Social network,Mobile Phone,0.05
+4,0.9772256728778468,Social network,Mobile Phone,0.05
+5,0.9834368530020704,Social network,Mobile Phone,0.05
+6,0.9813664596273292,Social network,Mobile Phone,0.05
+7,0.979296066252588,Social network,Mobile Phone,0.05
+8,0.9813664596273292,Social network,Mobile Phone,0.05
+9,0.9813664596273292,Social network,Mobile Phone,0.05
+10,0.9834368530020704,Social network,Mobile Phone,0.05
+1,0.8074534161490683,Non-social colocation network,Weeplaces,0.01
+2,0.8385093167701864,Non-social colocation network,Weeplaces,0.01
+3,0.8902691511387164,Non-social colocation network,Weeplaces,0.01
+4,0.8964803312629399,Non-social colocation network,Weeplaces,0.01
+5,0.9089026915113871,Non-social colocation network,Weeplaces,0.01
+6,0.9296066252587992,Non-social colocation network,Weeplaces,0.01
+7,0.9254658385093167,Non-social colocation network,Weeplaces,0.01
+8,0.9420289855072463,Non-social colocation network,Weeplaces,0.01
+9,0.9420289855072463,Non-social colocation network,Weeplaces,0.01
+10,0.9523809523809523,Non-social colocation network,Weeplaces,0.01
+1,0.917184265010352,Social network,Weeplaces,0.01
+2,0.9461697722567288,Social network,Weeplaces,0.01
+3,0.968944099378882,Social network,Weeplaces,0.01
+4,0.9751552795031055,Social network,Weeplaces,0.01
+5,0.979296066252588,Social network,Weeplaces,0.01
+6,0.9813664596273292,Social network,Weeplaces,0.01
+7,0.9772256728778468,Social network,Weeplaces,0.01
+8,0.9813664596273292,Social network,Weeplaces,0.01
+9,0.9813664596273292,Social network,Weeplaces,0.01
+10,0.9834368530020704,Social network,Weeplaces,0.01

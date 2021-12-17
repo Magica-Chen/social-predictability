@@ -1,21 +1,41 @@
-Rank,Percentage,network,dataset
-1,0.5670103092783505,Non-social colocation network,Gowalla
-2,0.5567010309278351,Non-social colocation network,Gowalla
-3,0.5051546391752577,Non-social colocation network,Gowalla
-4,0.5154639175257731,Non-social colocation network,Gowalla
-5,0.5154639175257731,Non-social colocation network,Gowalla
-6,0.5360824742268041,Non-social colocation network,Gowalla
-7,0.5154639175257731,Non-social colocation network,Gowalla
-8,0.5773195876288659,Non-social colocation network,Gowalla
-9,0.5876288659793815,Non-social colocation network,Gowalla
-10,0.6082474226804123,Non-social colocation network,Gowalla
-1,0.6701030927835051,Social network,Gowalla
-2,0.6494845360824743,Social network,Gowalla
-3,0.6494845360824743,Social network,Gowalla
-4,0.6804123711340206,Social network,Gowalla
-5,0.7422680412371134,Social network,Gowalla
-6,0.7010309278350515,Social network,Gowalla
-7,0.7216494845360825,Social network,Gowalla
-8,0.6907216494845361,Social network,Gowalla
-9,0.6701030927835051,Social network,Gowalla
-10,0.6804123711340206,Social network,Gowalla
+Rank,Percentage,network,dataset,alpha
+1,0.5670103092783505,Non-social colocation network,Gowalla,0.05
+2,0.5567010309278351,Non-social colocation network,Gowalla,0.05
+3,0.5051546391752577,Non-social colocation network,Gowalla,0.05
+4,0.5154639175257731,Non-social colocation network,Gowalla,0.05
+5,0.5154639175257731,Non-social colocation network,Gowalla,0.05
+6,0.5360824742268041,Non-social colocation network,Gowalla,0.05
+7,0.5154639175257731,Non-social colocation network,Gowalla,0.05
+8,0.5773195876288659,Non-social colocation network,Gowalla,0.05
+9,0.5876288659793815,Non-social colocation network,Gowalla,0.05
+10,0.6082474226804123,Non-social colocation network,Gowalla,0.05
+1,0.6701030927835051,Social network,Gowalla,0.05
+2,0.6494845360824743,Social network,Gowalla,0.05
+3,0.6494845360824743,Social network,Gowalla,0.05
+4,0.6804123711340206,Social network,Gowalla,0.05
+5,0.7422680412371134,Social network,Gowalla,0.05
+6,0.7010309278350515,Social network,Gowalla,0.05
+7,0.7216494845360825,Social network,Gowalla,0.05
+8,0.6907216494845361,Social network,Gowalla,0.05
+9,0.6701030927835051,Social network,Gowalla,0.05
+10,0.6804123711340206,Social network,Gowalla,0.05
+1,0.5670103092783505,Non-social colocation network,Weeplaces,0.01
+2,0.5360824742268041,Non-social colocation network,Weeplaces,0.01
+3,0.4948453608247423,Non-social colocation network,Weeplaces,0.01
+4,0.4845360824742268,Non-social colocation network,Weeplaces,0.01
+5,0.5051546391752577,Non-social colocation network,Weeplaces,0.01
+6,0.5051546391752577,Non-social colocation network,Weeplaces,0.01
+7,0.5051546391752577,Non-social colocation network,Weeplaces,0.01
+8,0.5773195876288659,Non-social colocation network,Weeplaces,0.01
+9,0.5876288659793815,Non-social colocation network,Weeplaces,0.01
+10,0.5979381443298969,Non-social colocation network,Weeplaces,0.01
+1,0.6701030927835051,Social network,Weeplaces,0.01
+2,0.6288659793814433,Social network,Weeplaces,0.01
+3,0.6494845360824743,Social network,Weeplaces,0.01
+4,0.6701030927835051,Social network,Weeplaces,0.01
+5,0.711340206185567,Social network,Weeplaces,0.01
+6,0.6701030927835051,Social network,Weeplaces,0.01
+7,0.6701030927835051,Social network,Weeplaces,0.01
+8,0.6597938144329897,Social network,Weeplaces,0.01
+9,0.6597938144329897,Social network,Weeplaces,0.01
+10,0.6597938144329897,Social network,Weeplaces,0.01
