@@ -133,8 +133,8 @@ ggsave(
 )
 
 ## ---------Fig 2: social ties vs colocator, CE and CP (weeplace)-------------
-NSCLN_wp<- read.csv('BZR/no_call_30/no_call_CLN_network_details_H.csv')
-SRN_wp<- read.csv('BZR/30/BZR_reciprocal_30_SRN_network_details_H.csv')
+NSCLN_wp<- read.csv('Brazil/no_call_150/no_call_CLN_network_details_H.csv')
+SRN_wp<- read.csv('Brazil/30/BZR_reciprocal_30_SRN_network_details_H.csv')
 
 common_wp <- intersect(NSCLN_wp$userid_x, SRN_wp$userid_x)
 
